@@ -1,7 +1,7 @@
 {
   "title": "Linux 源码分析",
   "emoji": "🐧",
-  "subtitle": "🐧 28章 实战体系",
+  "subtitle": "Linux 0.11 源码阅读 · 28 章",
   "chapterCount": 28,
   "chapters": [
     {
@@ -13,7 +13,7 @@
         "关键人物与趣闻",
         "为什么从0.11学起"
       ],
-      "file": "01.html"
+      "file": "chapters/01.html"
     },
     {
       "num": "02",
@@ -24,7 +24,7 @@
         "编译产物vmlinux",
         "RTFSC读源码方法论"
       ],
-      "file": "02.html"
+      "file": "chapters/02.html"
     },
     {
       "num": "03",
@@ -35,7 +35,7 @@
         "bochsrc逐行解读",
         "QEMU+GDB备选方案"
       ],
-      "file": "03.html"
+      "file": "chapters/03.html"
     },
     {
       "num": "04",
@@ -46,7 +46,7 @@
         "实模式编程要点",
         "INT 0x13踩坑故事"
       ],
-      "file": "04.html"
+      "file": "chapters/04.html"
     },
     {
       "num": "05",
@@ -57,7 +57,7 @@
         "head.S分页初始化",
         "A20门历史包袱"
       ],
-      "file": "05.html"
+      "file": "chapters/05.html"
     },
     {
       "num": "06",
@@ -68,7 +68,7 @@
         "move_to_user_mode",
         "init()第一个进程"
       ],
-      "file": "06.html"
+      "file": "chapters/06.html"
     },
     {
       "num": "07",
@@ -79,7 +79,7 @@
         "两级页表地址翻译",
         "TSS硬件任务切换"
       ],
-      "file": "07.html"
+      "file": "chapters/07.html"
     },
     {
       "num": "08",
@@ -90,7 +90,7 @@
         "8259A中断控制器",
         "asm.s通用中断入口"
       ],
-      "file": "08.html"
+      "file": "chapters/08.html"
     },
     {
       "num": "09",
@@ -101,7 +101,7 @@
         "sys_call_table调用表",
         "参数传递与安全拷贝"
       ],
-      "file": "09.html"
+      "file": "chapters/09.html"
     },
     {
       "num": "10",
@@ -112,7 +112,7 @@
         "switch_to()任务切换",
         "jiffies时钟滴答"
       ],
-      "file": "10.html"
+      "file": "chapters/10.html"
     },
     {
       "num": "11",
@@ -123,7 +123,7 @@
         "exit()与wait()回收",
         "僵尸进程踩坑故事"
       ],
-      "file": "11.html"
+      "file": "chapters/11.html"
     },
     {
       "num": "12",
@@ -134,7 +134,7 @@
         "sigframe用户栈帧",
         "sigaction可移植性"
       ],
-      "file": "12.html"
+      "file": "chapters/12.html"
     },
     {
       "num": "13",
@@ -145,7 +145,7 @@
         "get_free_page分配",
         "线性地址空间布局"
       ],
-      "file": "13.html"
+      "file": "chapters/13.html"
     },
     {
       "num": "14",
@@ -156,7 +156,7 @@
         "do_wp_page写时复制",
         "页表不一致幽灵Bug"
       ],
-      "file": "14.html"
+      "file": "chapters/14.html"
     },
     {
       "num": "15",
@@ -167,7 +167,7 @@
         "getblk/brelse源码",
         "bread/bwrite块读写"
       ],
-      "file": "15.html"
+      "file": "chapters/15.html"
     },
     {
       "num": "16",
@@ -178,7 +178,7 @@
         "inode结构与寻址",
         "位图分配/释放算法"
       ],
-      "file": "16.html"
+      "file": "chapters/16.html"
     },
     {
       "num": "17",
@@ -189,7 +189,7 @@
         "文件读写完整链路",
         "open/close引用计数"
       ],
-      "file": "17.html"
+      "file": "chapters/17.html"
     },
     {
       "num": "18",
@@ -200,7 +200,7 @@
         "a.out可执行格式",
         "shell管道链时序"
       ],
-      "file": "18.html"
+      "file": "chapters/18.html"
     },
     {
       "num": "19",
@@ -211,7 +211,7 @@
         "电梯调度算法",
         "ll_rw_block读写入口"
       ],
-      "file": "19.html"
+      "file": "chapters/19.html"
     },
     {
       "num": "20",
@@ -222,7 +222,7 @@
         "硬盘中断处理流程",
         "RAM虚拟盘rd.c"
       ],
-      "file": "20.html"
+      "file": "chapters/20.html"
     },
     {
       "num": "21",
@@ -233,7 +233,7 @@
         "控制台VGA显存操作",
         "行规程line discipline"
       ],
-      "file": "21.html"
+      "file": "chapters/21.html"
     },
     {
       "num": "22",
@@ -244,7 +244,7 @@
         "16550 UART寄存器",
         "串口中断处理"
       ],
-      "file": "22.html"
+      "file": "chapters/22.html"
     },
     {
       "num": "23",
@@ -255,7 +255,7 @@
         "Magic SysRq键",
         "常见内核Bug分类"
       ],
-      "file": "23.html"
+      "file": "chapters/23.html"
     },
     {
       "num": "24",
@@ -266,7 +266,7 @@
         "跟踪系统调用全程",
         "内存检查技巧"
       ],
-      "file": "24.html"
+      "file": "chapters/24.html"
     },
     {
       "num": "25",
@@ -277,7 +277,7 @@
         "重新编译内核",
         "用户态测试验证"
       ],
-      "file": "25.html"
+      "file": "chapters/25.html"
     },
     {
       "num": "26",
@@ -288,7 +288,7 @@
         "0.98 TCP/IP网络栈",
         "0.99 4GB线性空间"
       ],
-      "file": "26.html"
+      "file": "chapters/26.html"
     },
     {
       "num": "27",
@@ -299,7 +299,7 @@
         "LKM内核模块",
         "eBPF/XDP可编程"
       ],
-      "file": "27.html"
+      "file": "chapters/27.html"
     },
     {
       "num": "28",
@@ -310,7 +310,7 @@
         "完整开发流程",
         "RTFSC开始旅程"
       ],
-      "file": "28.html"
+      "file": "chapters/28.html"
     }
   ]
 }
