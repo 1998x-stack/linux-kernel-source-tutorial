@@ -250,10 +250,10 @@
       "num": "23",
       "title": "内核调试技术",
       "topics": [
-        "printk日志级别策略",
-        "Bochs内置调试器",
-        "Magic SysRq键",
-        "常见内核Bug分类"
+        "printk 的实现与局限",
+        "Bochs/QEMU 外部调试器",
+        "traps.c 异常现场",
+        "0.11 无日志级别/Magic SysRq"
       ],
       "file": "chapters/23.html"
     },
@@ -283,10 +283,10 @@
       "num": "26",
       "title": "从0.11到1.0",
       "topics": [
-        "0.12虚拟内存与交换",
-        "0.95 VFS框架",
-        "0.98 TCP/IP网络栈",
-        "0.99 4GB线性空间"
+        "0.11 的四个硬边界",
+        "无交换/无VFS/无网络",
+        "后续版本的方向",
+        "未逐版本核对的界限"
       ],
       "file": "chapters/26.html"
     },

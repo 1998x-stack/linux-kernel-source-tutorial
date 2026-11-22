@@ -88,3 +88,26 @@
 | 20 | [kernel/blk_drv/ramdisk.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/blk_drv/ramdisk.c) | rd_init 预留一段内存，do_rd_request 使用 memcpy 和 (sector<<9) 定位；没有运行时 malloc(2MiB) |
 
 本批新增十张 `assets/svg/16-*.svg` 至 `assets/svg/20-*.svg` 原创源码流程图；图中路径、字段和返回分支均可对照上述原版源码，标注的数值例子为教学演算而非运行实验。CI 目标：前 20 章静态结构和 1440/390/360px 浏览器基本交互验收；21–28 保留旧章节，不能据此声称完成源码审计。
+
+## 第五批 21–26：tty、驱动、调试、构建与演进边界
+
+本批在保留仓库结构的前提下把 21–26 从旧稿重写为源码锚定稿。以下命题均对应 v0.11 文件，图中数值与版本归属不确定处已在正文显式标注。
+
+| 章节 | v0.11 真实源码 | 已修正的技术事实 |
+|---|---|---|
+| 21 | [include/linux/tty.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/include/linux/tty.h) | `TTY_BUF_SIZE=1024`，`tty_queue` 为 `char buf[1024]`+head/tail+proc_list；旧稿的 `unsigned long data[128]` 与 16 位解释均错误 |
+| 21 | [kernel/chr_drv/tty_io.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/chr_drv/tty_io.c) | `tty_table[]` 只有 console/rs1(0x3f8)/rs2(0x2f8)；`copy_to_cooked` 按 ICANON/ISIG/ECHO 分支；`tty_read` 用 `secondary.data` 判断整行 |
+| 21 | [kernel/chr_drv/console.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/chr_drv/console.c) | 彩色显存 `video_mem_start=0xb8000`、端口 0x3d4/0x3d5、`video_erase_char=0x0720`；光标 14/15 号寄存器；`con_write` 为有限转义子集 |
+| 22 | [kernel/chr_drv/keyboard.S](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/chr_drv/keyboard.S) | 入口读端口 0x60，用 `key_table(,%eax,4)` 分派，无 `testb $0x80` 分支；`do_self` 依 mode 选 alt/shift/key_map；`put_queue` 写控制台 read_q |
+| 22 | [kernel/chr_drv/serial.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/chr_drv/serial.c), [rs_io.s](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/chr_drv/rs_io.s) | IER/LCR/MCR 分频 0x30→2400bps；`rs_int` 循环读 IIR 经 `jmp_table` 分派 read_char/write_char，`startup=256` |
+| 23 | [kernel/printk.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/printk.c) | printk 仅 `vsprintf` 到静态 `buf[1024]` 后 `_tty_write(0,...)`；无日志级别、无环形缓冲；更正旧稿的 Magic SysRq 与级别策略 |
+| 23 | [kernel/traps.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/traps.c), [mm/page.s](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/mm/page.s) | `die()` 打印陷阱号与寄存器，`trap_init()` 用 `set_trap_gate` 挂 0–16 号；页故障入口读 CR2 再调 do_no_page/do_wp_page |
+| 24 | [kernel/system_call.s](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/system_call.s) | `_system_call` 越界检查、换段、`_sys_call_table(,%eax,4)` 分派；`_ret_from_sys_call` 才处理 signals 并 `iret` |
+| 25 | [include/linux/sys.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/include/linux/sys.h), [include/unistd.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/include/unistd.h) | 最高调用号为 `__NR_setregid 71`，`nr_system_calls=72`；新调用应占 72，`nr_system_calls` 改 73；`_syscall0` 生成含 `int $0x80` 的存根 |
+| 25 | [Makefile](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/Makefile) | `all: Image`；`tools/system` 生成 `System.map`；本章的构建步骤明确标注为未执行 |
+| 26 | [mm/memory.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/mm/memory.c), [boot/head.s](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/boot/head.s), [include/linux/fs.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/include/linux/fs.h) | 0.11 无换出、只有 MINIX 文件系统、无网络；内核恒等映射前 16MiB，用户段基址 nr×0x4000000（每进程 64MiB） |
+| 26 | 后续版本 | 仅描述方向（交换、文件系统抽象层、协议栈），不声明具体版本归属；以 kernel.org 历史目录为准 |
+
+**视觉证据**：`assets/svg/21-*.svg` 至 `assets/svg/26-*.svg` 共 12 张原创 SVG，均可独立解析（viewBox + title/desc）。图中数值为教学演算，非模拟器测量；26 的时间线明确标注未逐版本核对。
+
+**质量门禁边界**：`scripts/check_site.py` 与 `scripts/browser_smoke.py` 已改为按 `data-state="reworked"` / `assets/css/site.css` 动态识别已重构章节，因此不再硬编码“前 20 章”。事实复审仍应逐章针对具体寄存器/字段继续开展；21–26 已审，27–28 尚未。
