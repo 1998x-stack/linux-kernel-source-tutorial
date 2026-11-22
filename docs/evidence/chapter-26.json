@@ -1,0 +1,69 @@
+{
+  "chapter": 26,
+  "version_scope": [
+    "Linux v0.12",
+    "v0.95a",
+    "v0.96c",
+    "v0.98-pl1",
+    "v0.99-pl11",
+    "v1.0"
+  ],
+  "claims": [
+    {
+      "id": "26-swap-trigger",
+      "claim": "v0.12 get_free_page invokes swap_out when no free page is found; no swapd daemon is involved in this path.",
+      "kind": "source",
+      "source_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.12/mm/swap.c",
+      "locator": "get_free_page; swap_out; try_to_swap_out",
+      "status": "verified"
+    },
+    {
+      "id": "26-no-second-chance",
+      "claim": "v0.12 swap_out scans page-table entries and try_to_swap_out distinguishes dirty pages from clean pages; the code does not implement a second-chance CLOCK policy.",
+      "kind": "source",
+      "source_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.12/mm/swap.c",
+      "locator": "try_to_swap_out; swap_out",
+      "status": "verified"
+    },
+    {
+      "id": "26-vfs-evolution",
+      "claim": "v0.95a has file_operations and inode_operations; v0.96c fs/super.c contains file_systems[] and get_fs_type().",
+      "kind": "source",
+      "source_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v0.96c/fs/super.c",
+      "locator": "file_systems[]; get_fs_type",
+      "status": "verified"
+    },
+    {
+      "id": "26-extfs-alpha",
+      "claim": "The 0.96c release announcement calls extended filesystem support alpha and states it supported long filenames and partitions greater than 64MB while mkefs was not yet available.",
+      "kind": "release_note",
+      "source_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v0.96c",
+      "locator": "0.96c release announcement",
+      "status": "verified"
+    },
+    {
+      "id": "26-network-not-default",
+      "claim": "The v0.98-pl1 README says TCP/IP sources were present but not compiled into the normal binary; SCSI, extfs, dosfs and proc-fs were present with testing caveats.",
+      "kind": "release_note",
+      "source_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v0.98-pl1/README",
+      "locator": "Things you may want to get rid of; TCP/IP code",
+      "status": "verified"
+    },
+    {
+      "id": "26-per-task-cr3",
+      "claim": "v0.99-pl11 uses task TSS CR3 and preserves page-directory entries 768..1023 while clearing user entries 0..767.",
+      "kind": "source",
+      "source_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v0.99-pl11/mm/memory.c",
+      "locator": "clear_page_tables; copy_page_tables; free_page_tables",
+      "status": "verified"
+    },
+    {
+      "id": "26-v1-release",
+      "claim": "The v1.0 tag is dated 1994-03-14 and its announcement says there were no new major features compared with pl15, mainly bug fixes.",
+      "kind": "release_note",
+      "source_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v1.0",
+      "locator": "tag metadata and release announcement",
+      "status": "verified"
+    }
+  ]
+}

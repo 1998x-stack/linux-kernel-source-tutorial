@@ -1,0 +1,56 @@
+{
+  "chapter": 28,
+  "version_scope": [
+    "Linux v0.11"
+  ],
+  "claims": [
+    {
+      "id": "28-existing-driver",
+      "claim": "Linux v0.11 already includes kernel/blk_drv/ramdisk.c and the block driver Makefile includes ramdisk.o.",
+      "kind": "source",
+      "source_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v0.11/kernel/blk_drv/ramdisk.c",
+      "locator": "do_rd_request; rd_init; rd_load",
+      "status": "verified"
+    },
+    {
+      "id": "28-reserve-memory",
+      "claim": "init/main.c calls rd_init(main_memory_start, RAMDISK*1024) under #ifdef RAMDISK and advances main_memory_start before mem_init.",
+      "kind": "source",
+      "source_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v0.11/init/main.c",
+      "locator": "main_memory_start; rd_init; mem_init",
+      "status": "verified"
+    },
+    {
+      "id": "28-device-minor",
+      "claim": "The original ramdisk driver uses major 1 and rejects requests whose minor is not 1.",
+      "kind": "source",
+      "source_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v0.11/kernel/blk_drv/ramdisk.c",
+      "locator": "MAJOR_NR 1; MINOR(CURRENT->dev) != 1",
+      "status": "verified"
+    },
+    {
+      "id": "28-sector-units",
+      "claim": "The driver converts request sector and nr_sectors to byte offset and length by shifting left 9; one 1KiB buffer block maps to two 512B sectors.",
+      "kind": "source",
+      "source_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v0.11/kernel/blk_drv/ramdisk.c",
+      "locator": "CURRENT->sector << 9; CURRENT->nr_sectors << 9",
+      "status": "verified"
+    },
+    {
+      "id": "28-root-load",
+      "claim": "hd.c sys_setup calls rd_load before mount_root; rd_load may load a MINIX image from floppy and sets ROOT_DEV to 0x0101.",
+      "kind": "source",
+      "source_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v0.11/kernel/blk_drv/hd.c",
+      "locator": "sys_setup; rd_load; mount_root",
+      "status": "verified"
+    },
+    {
+      "id": "28-hardening",
+      "claim": "The subtraction-based sector range-check snippet is a proposed hardening exercise, not original upstream code.",
+      "kind": "editorial",
+      "source_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v0.11/kernel/blk_drv/ramdisk.c",
+      "locator": "Compare with original pointer-end check",
+      "status": "illustrative"
+    }
+  ]
+}
