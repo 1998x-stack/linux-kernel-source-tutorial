@@ -1,314 +1,182 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
-    <title>第28章 综合项目</title>
-    <link rel="stylesheet" href="theme.css">
-</head>
-<body>
-<div class="double-border">
-<div class="container">
-    <div class="sidebar">
-        <h3>🐧 课程目录</h3>
-        <ul class="chapter-list">
-            <li><a href="01.html">01 Linux的诞生</a></li>
-            <li><a href="02.html">02 内核架构总览</a></li>
-            <li><a href="03.html">03 开发环境搭建</a></li>
-            <li><a href="04.html">04 引导启动(上)</a></li>
-            <li><a href="05.html">05 引导启动(下)</a></li>
-            <li><a href="06.html">06 内核初始化</a></li>
-            <li><a href="07.html">07 x86保护模式精要</a></li>
-            <li><a href="08.html">08 中断与异常</a></li>
-            <li><a href="09.html">09 系统调用</a></li>
-            <li><a href="10.html">10 进程调度</a></li>
-            <li><a href="11.html">11 进程生命周期</a></li>
-            <li><a href="12.html">12 信号机制</a></li>
-            <li><a href="13.html">13 内存管理(上)</a></li>
-            <li><a href="14.html">14 内存管理(下)</a></li>
-            <li><a href="15.html">15 缓冲区管理</a></li>
-            <li><a href="16.html">16 MINIX文件系统(上)</a></li>
-            <li><a href="17.html">17 MINIX文件系统(下)</a></li>
-            <li><a href="18.html">18 管道与exec</a></li>
-            <li><a href="19.html">19 块设备驱动(上)</a></li>
-            <li><a href="20.html">20 块设备驱动(下)</a></li>
-            <li><a href="21.html">21 字符设备驱动(上)</a></li>
-            <li><a href="22.html">22 字符设备驱动(下)</a></li>
-            <li><a href="23.html">23 内核调试技术</a></li>
-            <li><a href="24.html">24 GDB单步跟踪</a></li>
-            <li><a href="25.html">25 动手写系统调用</a></li>
-            <li><a href="26.html">26 从0.11到1.0</a></li>
-            <li><a href="27.html">27 现代内核对比</a></li>
-            <li><a href="28.html" class="active">28 综合项目</a></li>
-        </ul>
-    </div>
-    <div class="main-content">
-        <p>大家好，我是你们的讲师。欢迎来到第28章——我们这个课程的最后一章。前27章我们做了一件很难的事情：把Linux 0.11内核从引导扇区到设备驱动的每一段核心代码都读了一遍。但如果你只停留在"读代码"的层面，学习的闭环还没有真正完成。</p>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="以 Linux 0.11 原生 kernel/blk_drv/ramdisk.c 为基线，追踪启动预留、major/minor、请求扇区和 rd_load；实现溢出安全的边界检查，添加用户态读写自测与主机端参考测试，并提供现代 proc_ops 模块迁移实验。"><title>28 综合项目：审计并硬化 Linux 0.11 RAM Disk，迁移到现代 procfs · Linux 0.11 源码精读</title><link rel="stylesheet" href="../assets/css/site.css"></head><body><a class="skip" href="#content">跳转到正文</a><header class="site-header"><div class="header-inner"><a class="brand" href="../index.html"><b>0x011</b> · Linux Kernel Field Guide</a><nav class="top-nav" aria-label="全站导航"><a href="../index.html#chapters">全部章节</a><a href="../index.html#roadmap">学习路径</a><a href="https://github.com/1998x-stack/linux-kernel-source-tutorial">GitHub</a></nav></div></header><div class="article-layout"><aside class="article-toc"><strong>第 28 章 · 目录</strong><nav aria-label="本章目录"><a href="#brief">项目目标：不要重复造一个 1991 年已经存在的 RAM Disk</a><a href="#source">先读真实源码：ramdisk.c 已经包含驱动的三个核心函数</a><a href="#init">rd_init：RAM Disk 内存来自启动时预留，不来自运行时 kmalloc</a><a href="#rootfs">rd_load：从软盘偏移 256 个 1KiB 块加载根文件系统</a><a href="#units">扇区单位与边界：先验证整数范围，再计算指针</a><a href="#patch">完整硬化补丁：范围检查 + NULL bh 错误日志</a><a href="#selftest">用户态读写自测：写入模式、读回并逐字节比较</a><a href="#hosttest">主机端边界模型：验证最后一扇区、越界和减法检查</a><a href="#procfs">可选现代迁移实验：用 proc_ops 建立只读 /proc 入口</a><a href="#acceptance">验收矩阵：把静态检查、guest 测试和现代模块测试分开</a><a href="#deliver">最终交付物与源码阅读复盘</a></nav></aside><main id="content" class="article-body"><article><header class="article-header"><span class="eyebrow">CHAPTER 28 / LINUX KERNEL FIELD GUIDE</span><h1>综合项目：审计并硬化 Linux 0.11 RAM Disk，迁移到现代 procfs</h1><p class="subtitle">以 Linux 0.11 原生 kernel/blk_drv/ramdisk.c 为基线，追踪启动预留、major/minor、请求扇区和 rd_load；实现溢出安全的边界检查，添加用户态读写自测与主机端参考测试，并提供现代 proc_ops 模块迁移实验。</p><span class="pill">RTFSC Capstone · RAM Disk + procfs</span></header><section id="brief" aria-labelledby="brief-heading"><h2 id="brief-heading">项目目标：不要重复造一个 1991 年已经存在的 RAM Disk</h2><p>本章把源码阅读变成一个可审计的内核工程项目。目标不是从零编写一个现代 block driver，而是准确理解 Linux 0.11 已有的 <code>kernel/blk_drv/ramdisk.c</code>，为其请求范围检查补上更稳健的整数边界判断，再用用户态读写测试验证设备接口。最后提供一个独立的现代 procfs 模块作为可选迁移练习。</p><p>这个边界必须先说清楚：0.11 的 RAM Disk 不是现代 <code>kmalloc(GFP_KERNEL)</code> 分配一块内存后注册 <code>gendisk</code> 的写法。它在启动阶段预留一段连续内存，把 major 1 的请求函数指向 <code>do_rd_request()</code>，并通过 <code>memcpy()</code> 在内存和请求缓冲区之间搬运数据。</p><figure class="figure" tabindex="0" aria-label="可横向滚动的技术图解"><img src="../assets/svg/28-ramdisk-flow.svg" loading="lazy" alt="Linux 0.11 RAM Disk 从启动预留内存、注册 major 1 request_fn，到 do_rd_request 与可选 rd_load 根文件系统装载的完整路径" width="960" height="480"><figcaption>这是一条真实的 0.11 驱动路径，不是现代 Linux block layer API。</figcaption></figure></section>
+<section id="source" aria-labelledby="source-heading"><h2 id="source-heading">先读真实源码：ramdisk.c 已经包含驱动的三个核心函数</h2><p>v0.11 的 <code>kernel/blk_drv/ramdisk.c</code> 定义了三个关键部分：全局 <code>rd_start</code>/<code>rd_length</code> 描述内存盘区域；<code>do_rd_request()</code> 从块请求队列取出请求并按扇区偏移复制；<code>rd_init()</code> 设置 <code>blk_dev[1].request_fn</code>、初始化内存并返回需要预留的字节数；<code>rd_load()</code> 则是可选的启动镜像加载器。</p><div class="code-frame"><div class="code-caption">0.11 原始 request handler 的核心结构</div><pre><code>#define MAJOR_NR 1
+#include &quot;blk.h&quot;
 
-        <h2>引言</h2>
+char *rd_start;
+int rd_length = 0;
 
-        <p><strong>只有当你亲手写过内核代码之后，你才能真正理解内核。</strong>这不是什么玄学——这是一个工程事实。读代码是被动输入，写代码是主动输出。你在写代码的过程中踩过的每一个坑、调试的每一个bug、解决的每一个问题，都会让你对内核的理解上升一个台阶。</p>
+void do_rd_request(void)
+{
+    int len;
+    char *addr;
 
-        <p>本章提供了两个项目方案：<strong>ramdisk驱动</strong>（主推，中等难度，涉及块设备驱动的完整流程）和<strong>简单proc文件系统</strong>（备选，主要涉及VFS接口实现）。建议你至少完成其中一项。如果时间充裕，两项都做。</p>
-
-        <h2>项目一：实现ramdisk驱动</h2>
-
-        <p>ramdisk是一个用内存模拟块设备的驱动。它的核心思想很简单：在一段预先分配的内存上模拟磁盘的块读写操作。当内核向ramdisk发出读块请求时，驱动从内存中拷贝数据到请求缓冲区；写请求则反向拷贝。</p>
-
-        <p>这个项目的精彩之处在于：它复用了我们在第19-20章学到的所有块设备驱动的知识——请求队列（request queue）、请求处理函数、设备号注册、blk_dev[]表。你将看到hd.c的代码模式如何被复用到一个新的驱动中。</p>
-
-        <pre><code>/* rd.c — 在Linux 0.11上实现ramdisk驱动 */
-/* 仿照 kernel/blk_drv/hd.c 的request处理模式 */
-
-#include &lt;linux/config.h&gt;
-#include &lt;linux/sched.h&gt;
-#include &lt;asm/system.h&gt;
-#include &lt;asm/io.h&gt;
-
-/* ramdisk设备号 — 使用主设备号1（未使用的RAM盘） */
-#define RAMDISK_MAJOR  1
-#define RAMDISK_SIZE   (1024 * 1024)    /* 1 MB ramdisk */
-#define BLOCK_SIZE     1024             /* 块大小 */
-
-static char *rd_buffer = NULL;          /* 内存中的"磁盘" */
-
-/* 请求处理函数 — 被do_hd_request()类似的模式调用 */
-void do_rd_request(void) {
-    int block;
-    struct buffer_head *bh;
-    char *disk_addr;
-
-    while (1) {
-        /* 从请求队列中取出一个请求 */
-        if (!(CURRENT-&gt;bh)) break;
-
-        bh = CURRENT-&gt;bh;
-        block = CURRENT-&gt;block;
-        disk_addr = rd_buffer + block * BLOCK_SIZE;
-
-        if (CURRENT-&gt;cmd == WRITE) {
-            /* 写：从buffer_head拷贝到ramdisk */
-            memcpy(disk_addr, bh-&gt;b_data, BLOCK_SIZE);
-        } else {
-            /* 读：从ramdisk拷贝到buffer_head */
-            memcpy(bh-&gt;b_data, disk_addr, BLOCK_SIZE);
-        }
-
-        /* 标记请求完成，唤醒等待的进程 */
-        end_request(1);
+    INIT_REQUEST;
+    addr = rd_start + (CURRENT-&gt;sector &lt;&lt; 9);
+    len = CURRENT-&gt;nr_sectors &lt;&lt; 9;
+    if ((MINOR(CURRENT-&gt;dev) != 1) ||
+        (addr + len &gt; rd_start + rd_length)) {
+        end_request(0);
+        goto repeat;
     }
+    if (CURRENT-&gt;cmd == WRITE)
+        memcpy(addr, CURRENT-&gt;buffer, len);
+    else if (CURRENT-&gt;cmd == READ)
+        memcpy(CURRENT-&gt;buffer, addr, len);
+    else
+        panic(&quot;unknown ramdisk-command&quot;);
+    end_request(1);
+    goto repeat;
+}</code></pre></div><p>注意真实请求字段：<code>sector</code> 是 512 字节扇区编号，<code>nr_sectors</code> 是扇区数量，<code>buffer</code> 是数据指针，<code>cmd</code> 是 READ/WRITE。这里不是 <code>CURRENT-&gt;block</code>，也不应把 <code>CURRENT-&gt;bh-&gt;b_data</code> 当成唯一数据地址。</p><p><code>kernel/blk_drv/blk.h</code> 特别说明：paging request 的 <code>bh</code> 可以是 NULL，等待完成用 <code>waiting</code>；因此驱动应该使用 <code>CURRENT-&gt;buffer</code>。原版 <code>end_request()</code> 成功路径会检查 bh 是否存在，但失败日志仍会读取 <code>CURRENT-&gt;bh-&gt;b_blocknr</code>，这是扩展错误路径时必须留意的历史边界。</p><p>源码：<a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/blk_drv/ramdisk.c" target="_blank" rel="noopener noreferrer">kernel/blk_drv/ramdisk.c</a>、<a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/blk_drv/blk.h" target="_blank" rel="noopener noreferrer">kernel/blk_drv/blk.h</a>。</p></section>
+<section id="init" aria-labelledby="init-heading"><h2 id="init-heading">rd_init：RAM Disk 内存来自启动时预留，不来自运行时 kmalloc</h2><p>根目录 <code>Makefile</code> 有 <code>RAMDISK = #-DRAMDISK=512</code> 选项。启用后，<code>init/main.c</code> 在 <code>mem_init()</code> 之前调用 <code>rd_init(main_memory_start, RAMDISK*1024)</code>，并把返回值加到 <code>main_memory_start</code>。因此 RAM Disk 所占内存不会再被普通页分配器当作可用 RAM 分配。</p><div class="code-frame"><div class="code-caption">init/main.c：预留 RAM Disk 区域</div><pre><code>main_memory_start = buffer_memory_end;
+#ifdef RAMDISK
+main_memory_start += rd_init(main_memory_start, RAMDISK*1024);
+#endif
+mem_init(main_memory_start, memory_end);</code></pre></div><p><code>RAMDISK=512</code> 按这段调用传入 512×1024 字节，也就是 512 个 1KiB 文件系统块（512KiB）。<code>rd_init()</code> 把 <code>rd_start</code> 指向这段物理内存的内核可访问地址、记录 <code>rd_length</code>、将内容清零并注册 major 1 的 request handler。这里没有运行时 <code>kmalloc</code>、没有现代 <code>alloc_disk()</code> 或 <code>gendisk</code>。</p><p>同时，v0.11 根目录 Makefile 把可用物理内存上限钳在 16MiB；RAM Disk 会从可供 <code>mem_init()</code> 管理的区域中扣除。若把 RAMDISK 配得过大，会直接挤压内核普通可用内存。</p></section>
+<section id="rootfs" aria-labelledby="rootfs-heading"><h2 id="rootfs-heading">rd_load：从软盘偏移 256 个 1KiB 块加载根文件系统</h2><p><code>rd_load()</code> 的注释说明了它的启动约定：原始 root device 先设置为 floppy；当软盘上的 RAM disk 镜像存在且大小合适时，再将 root device 切换到 RAM Disk。函数从 block 256 开始寻找 MINIX superblock，检查 <code>SUPER_MAGIC</code>，计算镜像需要的块数，并确认没有超过 <code>rd_length</code>。</p><p>确认通过后，它逐个读入软盘块到 <code>rd_start</code>，最后将 <code>ROOT_DEV=0x0101</code>。这意味着 major=1、minor=1。<code>kernel/blk_drv/blk.h</code> 中 major 1 是 ramdisk；驱动又明确拒绝 <code>MINOR != 1</code>。因此用于访问该设备的节点是 <code>/dev/ram1</code>（block major 1 minor 1），不是常见误写的 <code>/dev/ram0</code>（minor 0）。</p><figure class="figure" tabindex="0" aria-label="可横向滚动的技术图解"><img src="../assets/svg/28-ramdisk-flow.svg" loading="lazy" alt="rd_load 从软盘块 256 开始读取 MINIX superblock 和文件系统块，成功后把 ROOT_DEV 切换为 0x0101" width="960" height="480"><figcaption>rd_load 是可选的 rootfs 镜像加载流程；单独读写 /dev/ram1 不要求它先成功加载 rootfs。</figcaption></figure><p>源码：<a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/blk_drv/ramdisk.c" target="_blank" rel="noopener noreferrer">rd_init()/rd_load()</a>、<a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/init/main.c" target="_blank" rel="noopener noreferrer">init/main.c</a>、<a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/blk_drv/hd.c" target="_blank" rel="noopener noreferrer">sys_setup() 调用 rd_load()</a>。</p></section>
+<section id="units" aria-labelledby="units-heading"><h2 id="units-heading">扇区单位与边界：先验证整数范围，再计算指针</h2><p>原始实现先做 <code>addr = rd_start + (sector &lt;&lt; 9)</code> 和 <code>len = nr_sectors &lt;&lt; 9</code>，再检查 <code>addr + len</code> 是否越过 <code>rd_start + rd_length</code>。这个写法把安全性寄托在指针加法之后；如果输入范围异常，偏移或长度的整数运算可能先溢出，指针比较就不能作为可靠的首要边界验证。</p><p>更稳健的方式是先把 RAM Disk 容量换算为 512B sectors，然后用减法形式检查请求：<code>sector &lt;= capacity</code> 且 <code>nr_sectors &lt;= capacity - sector</code>。这样避免了直接计算 <code>sector + nr_sectors</code> 时的加法溢出；只有验证通过后，才计算地址和字节长度。</p><figure class="figure" tabindex="0" aria-label="可横向滚动的技术图解"><img src="../assets/svg/28-sector-bounds.svg" loading="lazy" alt="512KiB RAM Disk 对应 1024 个 512B sectors；最后一个 1KiB 块覆盖 sector 1022–1023，sector 1024 开始越界" width="960" height="480"><figcaption>减法边界检查先证明请求在容量内，再做移位和指针运算。</figcaption></figure><div class="code-frame"><div class="code-caption">建议的边界检查（在 0.11 ramdisk.c 的请求入口中）</div><pre><code>unsigned long capacity;
+unsigned long sector;
+unsigned long count;
+
+capacity = (unsigned long)rd_length &gt;&gt; 9;
+sector = CURRENT-&gt;sector;
+count = CURRENT-&gt;nr_sectors;
+
+if (MINOR(CURRENT-&gt;dev) != 1 ||
+    !count ||
+    sector &gt; capacity ||
+    count &gt; capacity - sector) {
+    end_request(0);
+    goto repeat;
 }
 
-/* 初始化函数 — 在内核启动时调用 */
-void rd_init(void) {
-    int i;
+addr = rd_start + (sector &lt;&lt; 9);
+len = count &lt;&lt; 9;</code></pre></div><p>这个片段只展示安全范围检查的核心替换点；真实补丁还需要处理 <code>end_request(0)</code> 对 <code>bh == NULL</code> 的错误日志边界。由于 v0.11 的通用 <code>end_request()</code> 在失败时无条件打印 <code>CURRENT-&gt;bh-&gt;b_blocknr</code>，如果你要让可能没有 buffer_head 的 paging request 也走失败分支，应在 <code>blk.h</code> 中改为先判断 bh 是否存在，否则打印 sector。不要只在 ramdisk.c 里加检查，就宣称通用块层错误路径也已经安全。</p></section>
+<section id="patch" aria-labelledby="patch-heading"><h2 id="patch-heading">完整硬化补丁：范围检查 + NULL bh 错误日志</h2><p>补丁分两处。第一处在 <code>ramdisk.c</code> 中把“先算指针、再比较指针”的顺序改成“先校验 sector/count，再算指针”；第二处在 <code>blk.h</code> 的 <code>end_request()</code> 错误日志中兼容 <code>bh == NULL</code>。这两处解决的是不同问题：前者保护设备容量边界，后者保护通用请求失败时的诊断路径。</p><div class="code-frame"><div class="code-caption">blk.h：避免错误日志解引用 NULL buffer_head</div><pre><code>if (!uptodate) {
+    printk(DEVICE_NAME &quot; I/O error\n\r&quot;);
+    if (CURRENT-&gt;bh)
+        printk(&quot;dev %04x, block %d\n\r&quot;,
+               CURRENT-&gt;dev, CURRENT-&gt;bh-&gt;b_blocknr);
+    else
+        printk(&quot;dev %04x, sector %lu\n\r&quot;,
+               CURRENT-&gt;dev, CURRENT-&gt;sector);
+}</code></pre></div><p>在修改之前先保存原始文件，应用补丁后检查两个改动都已进入正确文件。不要为了“让错误测试通过”把 <code>end_request(0)</code> 改成成功；失败请求必须将 buffer 标记为 not-uptodate 并唤醒等待者。</p><aside class="note"><p>历史源码修复不是现代内核驱动教程。Linux 0.11 的编译器、头文件、block request API 和内存模型都与当前内核不同；此补丁应在对应 v0.11 工作树和旧工具链中验证。</p></aside></section>
+<section id="selftest" aria-labelledby="selftest-heading"><h2 id="selftest-heading">用户态读写自测：写入模式、读回并逐字节比较</h2><p>设备节点创建为 block major 1 minor 1。若在宿主机挂载的 rootfs 目录中准备节点，可用 <code>mknod /path/to/rootfs/dev/ram1 b 1 1</code>；若在 guest 中创建，则确认该发行根文件系统包含 mknod 工具。测试程序对 <code>/dev/ram1</code> 写入 1KiB 的确定性模式，再 seek 回开头读回并比较，验证 READ/WRITE 两个分支和数据偏移。</p><div class="code-frame"><div class="code-caption">labs/28/ramdisk_selftest.c：0.11 用户态读写回环</div><pre><code>#include &lt;fcntl.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
 
-    /* 1. 分配内存空间作为ramdisk的存储介质 */
-    rd_buffer = (char *)kmalloc(RAMDISK_SIZE, GFP_KERNEL);
-    if (!rd_buffer) {
-        printk("rd_init: failed to allocate buffer\n");
-        return;
+#define TEST_BYTES 1024
+
+int main(void)
+{
+    int fd, i;
+    unsigned char written[TEST_BYTES];
+    unsigned char readback[TEST_BYTES];
+
+    for (i = 0; i &lt; TEST_BYTES; i++)
+        written[i] = (i * 37 + 11) &amp; 0xff;
+
+    fd = open(&quot;/dev/ram1&quot;, O_RDWR, 0);
+    if (fd &lt; 0) {
+        printf(&quot;open /dev/ram1 failed\n&quot;);
+        return 1;
     }
+    if (lseek(fd, 0L, 0) &lt; 0 ||
+        write(fd, written, TEST_BYTES) != TEST_BYTES ||
+        lseek(fd, 0L, 0) &lt; 0 ||
+        read(fd, readback, TEST_BYTES) != TEST_BYTES) {
+        printf(&quot;ramdisk I/O failed\n&quot;);
+        close(fd);
+        return 2;
+    }
+    for (i = 0; i &lt; TEST_BYTES; i++) {
+        if (written[i] != readback[i]) {
+            printf(&quot;mismatch at %d\n&quot;, i);
+            close(fd);
+            return 3;
+        }
+    }
+    close(fd);
+    printf(&quot;ramdisk read/write PASS\n&quot;);
+    return 0;
+}</code></pre></div><p>把该程序用与 0.11 用户空间兼容的 i386 a.out 工具链构建为 ZMAGIC，再放入 guest rootfs。0.11 的 <code>fs/exec.c</code> 不接受现代 GCC 默认 ELF 文件。若你只在现代主机上用本机 gcc 编译并运行了这个源文件，那只能证明 host 程序可运行，不等于 0.11 guest 可装载它。</p></section>
+<section id="hosttest" aria-labelledby="hosttest-heading"><h2 id="hosttest-heading">主机端边界模型：验证最后一扇区、越界和减法检查</h2><p>历史内核无法在现代 CI 中直接编译/启动时，可以先对范围判定写一个纯 Python 的参考模型。它不冒充内核集成测试，但能验证算术边界：512KiB 对应 1024 个扇区；从 sector 1022 读取 2 个扇区刚好结束；从 sector 1023 读取 2 个扇区越界；sector 大于 capacity、零扇区请求均拒绝。</p><div class="code-frame"><div class="code-caption">tests/test_ramdisk_bounds.py：无依赖边界模型</div><pre><code>SECTOR_SIZE = 512
 
-    /* 2. 清零所有"磁盘块" */
-    memset(rd_buffer, 0, RAMDISK_SIZE);
+def request_fits(length_bytes, sector, count):
+    capacity = length_bytes // SECTOR_SIZE
+    return (
+        count &gt; 0
+        and sector &lt;= capacity
+        and count &lt;= capacity - sector
+    )
 
-    /* 3. 注册块设备 */
-    blk_dev[RAMDISK_MAJOR].request_fn = do_rd_request;
+def test_last_1k_block_fits():
+    assert request_fits(512 * 1024, 1022, 2)
 
-    /* 4. 创建/dev/ram0设备节点 (mknod /dev/ram0 b 1 0) */
-    printk("Ramdisk initialized: %d KB at 0x%x\n",
-           RAMDISK_SIZE / 1024, (unsigned)rd_buffer);
-}</code></pre>
+def test_request_crossing_end_fails():
+    assert not request_fits(512 * 1024, 1023, 2)
 
-        <p>实现步骤（请跟着做）：</p>
+def test_request_starting_at_end_fails():
+    assert not request_fits(512 * 1024, 1024, 1)
 
-        <ul>
-            <li><strong>步骤1</strong>：在<code>kernel/blk_drv/</code>目录下创建<code>rd.c</code>文件</li>
-            <li><strong>步骤2</strong>：定义设备号为1（确认与现有设备不冲突）</li>
-            <li><strong>步骤3</strong>：实现<code>do_rd_request()</code>函数——处理读写请求</li>
-            <li><strong>步骤4</strong>：实现<code>rd_init()</code>——分配内存、将处理函数注册到<code>blk_dev[]</code>表</li>
-            <li><strong>步骤5</strong>：修改<code>kernel/blk_drv/Makefile</code>，将rd.c加入编译</li>
-            <li><strong>步骤6</strong>：在<code>kernel/blk_drv/ll_rw_blk.c</code>中引用外部函数</li>
-            <li><strong>步骤7</strong>：修改<code>init/main.c</code>，在<code>init()</code>中调用<code>rd_init()</code></li>
-            <li><strong>步骤8</strong>：重新编译内核，用QEMU启动测试</li>
-            <li><strong>步骤9</strong>：在Linux 0.11中用<code>mknod /dev/ram0 b 1 0</code>创建设备节点</li>
-            <li><strong>步骤10</strong>：使用<code>dd if=/dev/zero of=/dev/ram0 bs=1024 count=1024</code>测试</li>
-        </ul>
+def test_zero_count_fails():
+    assert not request_fits(512 * 1024, 10, 0)
 
-        <h2>项目二：简单procfs（备选）</h2>
+def test_far_out_of_range_fails():
+    assert not request_fits(512 * 1024, 0xffffffff, 1)</code></pre></div><p>在仓库根目录运行 <code>python3 -m unittest discover -s tests -v</code>。该测试覆盖的是边界算术参考模型；guest 端的 <code>ramdisk_selftest</code> 才验证驱动请求路径。两者都通过仍不等于旧工具链构建与 QEMU 启动已经完成，除非你实际运行并保留了相应日志。</p></section>
+<section id="procfs" aria-labelledby="procfs-heading"><h2 id="procfs-heading">可选现代迁移实验：用 proc_ops 建立只读 /proc 入口</h2><p>procfs 并不是 Linux 0.11 的现成接口。v0.99 的 <code>fs/filesystems.c</code> 已经能看到 <code>CONFIG_PROC_FS</code> 与 <code>proc_read_super</code> 的注册项；而这里的练习则是现代 Linux 的 out-of-tree module，使用 <code>proc_ops</code>、<code>seq_file</code>、<code>proc_create()</code> 和 <code>proc_remove()</code> 创建只读 <code>/proc/kernel_lab</code>。</p><figure class="figure" tabindex="0" aria-label="可横向滚动的技术图解"><img src="../assets/svg/28-procfs-module.svg" loading="lazy" alt="现代 procfs 模块的加载生命周期：module_init 创建 proc entry，用户 cat 触发 seq_file read，module_exit 删除入口" width="960" height="480"><figcaption>该实验面向现代 Linux，不是对 0.11 的回移植。</figcaption></figure><div class="code-frame"><div class="code-caption">labs/28/kernel_lab_proc.c</div><pre><code>#include &lt;linux/init.h&gt;
+#include &lt;linux/module.h&gt;
+#include &lt;linux/proc_fs.h&gt;
+#include &lt;linux/seq_file.h&gt;
+#include &lt;linux/sched.h&gt;
 
-        <p>如果你对文件系统更感兴趣，可以考虑实现一个只读的<code>/proc</code>虚拟文件系统。procfs是一个"伪造"的文件系统——它不存储在磁盘上，而是动态生成内容。当用户<code>cat /proc/meminfo</code>时，内核实时收集内存信息并格式化为文本返回。</p>
+static struct proc_dir_entry *entry;
 
-        <p>在0.11上实现procfs的核心思路：</p>
+static int lab_show(struct seq_file *m, void *v)
+{
+    seq_printf(m, &quot;name: kernel-field-guide\n&quot;);
+    seq_printf(m, &quot;pid: %d\n&quot;, current-&gt;pid);
+    seq_printf(m, &quot;comm: %s\n&quot;, current-&gt;comm);
+    return 0;
+}
 
-        <pre><code>/* 在Linux 0.11上实现一个简易procfs的核心步骤 */
-/*
- * 关键难点：0.11只实现了MINIX文件系统，所有文件操作假设数据在磁盘上。
- * procfs没有磁盘数据，需要"虚拟化"inode的读取逻辑。
- */
+static int lab_open(struct inode *inode, struct file *file)
+{
+    return single_open(file, lab_show, NULL);
+}
 
-/* 1. 注册proc文件系统类型 */
-/* 在fs/super.c中添加proc_fs_type */
-static struct file_system_type proc_fs_type = {
-    NULL,           /* next */
-    "proc",         /* name */
-    FS_SINGLE,      /* flags */
-    proc_read_super /* read_super */
+static const struct proc_ops lab_ops = {
+    .proc_open = lab_open,
+    .proc_read = seq_read,
+    .proc_lseek = seq_lseek,
+    .proc_release = single_release,
 };
 
-/* 2. 实现proc_read_super — 创建根inode */
-struct super_block *proc_read_super(struct super_block *s, void *data, int silent) {
-    struct inode *root_inode;
-    s->s_mounted = iget(s, PROC_ROOT_INO);
-    root_inode = s->s_mounted;
-    root_inode->i_mode = S_IFDIR | S_IRUGO | S_IXUGO;
-    return s;
+static int __init lab_init(void)
+{
+    entry = proc_create(&quot;kernel_lab&quot;, 0444, NULL, &amp;lab_ops);
+    if (!entry)
+        return -ENOMEM;
+    pr_info(&quot;kernel_lab: /proc/kernel_lab created\n&quot;);
+    return 0;
 }
 
-/* 3. 实现proc_read_inode — 动态构造inode内容 */
-struct inode *proc_read_inode(struct inode *inode) {
-    /* 根据ino返回对应文件的模拟inode信息 */
-    switch (inode->i_ino) {
-    case PROC_ROOT_INO:    /* 根目录 */  ...
-    case PROC_MEMINFO_INO: /* meminfo */ ...
-    }
-    return inode;
+static void __exit lab_exit(void)
+{
+    proc_remove(entry);
+    pr_info(&quot;kernel_lab: removed\n&quot;);
 }
 
-/* 4. 创建/proc/meminfo节点 — 返回内存统计信息 */
-/* 当read()触发时，动态格式化内存信息到用户缓冲区 */</code></pre>
+module_init(lab_init);
+module_exit(lab_exit);
+MODULE_LICENSE(&quot;GPL&quot;);</code></pre></div><div class="code-frame"><div class="code-caption">labs/28/Kbuild 与外部模块构建</div><pre><code># Kbuild
+obj-m := kernel_lab_proc.o
 
-        <div class="tip">
-            <strong>为什么推荐选ramdisk而不是procfs？</strong>ramdisk的代码模式（request_fn）在第19-20章中有完整的对照代码（hd.c），你可以直接模仿。而procfs在0.11上的实现需要对VFS框架做较大的扩展——0.11的VFS还没有为"虚拟文件系统"预留足够的hook点。如果你真的想做procfs，建议你在Linux 0.95以上的版本上实验，那里的VFS接口更完善。
-        </div>
+# Build against the running kernel's configured build tree
+make -C /lib/modules/$(uname -r)/build M=$PWD modules
 
-        <h2>开发流程</h2>
-
-        <p>从需求到测试的完整流程，不是"先写代码再debug"的蛮力模式，而是一个需要你反复循环的过程。下面这张checklist涵盖了0.11上开发内核模块的标准流程：</p>
-
-        <pre><code>=== Linux 0.11 内核开发 Checklist ===
-
-[ ] 需求分析
-    [ ] 明确要做什么功能
-    [ ] 确定与哪些现有模块交互
-    [ ] 画出数据和函数调用流程图
-
-[ ] 设计方案
-    [ ] 选择将代码放在哪个目录
-    [ ] 定义数据结构（有没有现成的可用？）
-    [ ] 确定与内核其他部分的接口函数
-    [ ] 考虑错误路径：内存不足？参数无效？
-
-[ ] 编码
-    [ ] 编写.c文件
-    [ ] 编写.h文件（如果需要）
-    [ ] 修改Makefile
-    [ ] 在main.c或其他地方添加初始化调用
-
-[ ] 编译
-    $ make clean  # 清理旧的目标文件
-    $ make        # 编译整个内核
-
-[ ] 调试
-    [ ] 编译错误：检查语法、函数声明、头文件路径
-    [ ] 链接错误：检查外部符号是否声明、Makefile是否遗漏
-    [ ] 运行时panic：检查空指针、未初始化变量
-
-[ ] 测试
-    [ ] 功能测试：功能是否如预期工作
-    [ ] 边界测试：最坏情况下的行为（满盘、最大并发）
-    [ ] 压力测试：重复操作1000次看是否稳定
-
-[ ] QEMU验证
-    $ make start  # 启动QEMU模拟器
-    # 在模拟器中执行功能测试</code></pre>
-
-        <div class="highlight">
-            <strong>高效开发的小技巧</strong>：在0.11上开发时，<code>printk()</code>是你最好的朋友——它等价于用户态的printf，但输出到内核日志。你可以把它当作"printf调试法"来用：在每个函数的入口和出口加printk，打印关键变量的值。当内核panic时，这些printk输出会停留在屏幕上，告诉你最后执行到哪里。这个方法虽然"原始"，但在0.11的简单环境下非常高效。
-        </div>
-
-        <h2>测试与验证</h2>
-
-        <p>写完了驱动只是第一步。你需要系统地测试它是否真的可靠。以下是ramdisk驱动的测试用例清单：</p>
-
-        <table>
-            <thead>
-                <tr><th>测试场景</th><th>操作</th><th>预期结果</th></tr>
-            </thead>
-            <tbody>
-                <tr><td>正常读</td><td><code>dd if=/dev/ram0 of=/tmp/test bs=1024 count=10</code></td><td>成功读取10个块，返回0填充的数据</td></tr>
-                <tr><td>正常写</td><td><code>dd if=/dev/zero of=/dev/ram0 bs=1024 count=100</code></td><td>成功写入100个块，无报错</td></tr>
-                <tr><td>写后读校验</td><td>写固定模式数据，再读出比对</td><td>读出的数据与写入的完全一致</td></tr>
-                <tr><td>满盘测试</td><td>写入超过1MB的数据（ramdisk大小）</td><td>写入失败，返回"设备无空间"错误</td></tr>
-                <tr><td>边界访问</td><td>读写第0块和最后一块</td><td>正常完成</td></tr>
-                <tr><td>非法参数</td><td>向ramdisk发出不存在设备的请求</td><td>请求被拒绝，内核不panic</td></tr>
-                <tr><td>连续读写</td><td>循环1000次写+读+校验</td><td>1000次全部通过，无数据损坏</td></tr>
-                <tr><td>挂载文件系统</td><td><code>mkfs.minix /dev/ram0 && mount /dev/ram0 /mnt/ram</code></td><td>成功挂载，可以正常创建/读写文件</td></tr>
-            </tbody>
-        </table>
-
-        <p>如果你所有测试用例都通过，恭喜你——你成功在Linux 0.11上实现了一个完善的ramdisk驱动。这意味着你完全掌握了块设备驱动的开发流程。</p>
-
-        <h2>踩坑故事</h2>
-
-        <p>内核开发远比用户态编程容易"翻车"。以下是初学者在写ramdisk驱动时最容易栽的三个跟头——我在教学和实践中都见过：</p>
-
-        <p><strong>踩坑一：设备号冲突。</strong>0.11的设备号分配不像现代内核那样有统一的注册机制。如果你不小心使用了已经被占用的主设备号（比如2代表软盘），内核会尝试调用错误的请求处理函数，导致不可预测的行为。解决方法：分配设备号前，查看<code>kernel/blk_drv/</code>下所有驱动使用的设备号，确保你的设备号不与现有驱动冲突。</p>
-
-        <p><strong>踩坑二：忘记初始化结构体中的指针字段为NULL。</strong>C语言中局部变量和kmalloc分配的内存不会自动清零。如果你定义了一个<code>struct request</code>但没有初始化所有字段，其中的函数指针可能包含随机值。当内核尝试调用这个"野指针"函数时——直接panic。0.11的内核没有现代内核的防御性检查（如<code>BUG_ON()</code>），一旦跳转到非法地址，你能看到的只有一串十六进制寄存器dump，没有任何错误信息。所以：<strong>每次定义结构体后，立即memset(&stru, 0, sizeof(stru))</strong>。</p>
-
-        <p><strong>踩坑三：请求队列死循环。</strong><code>do_rd_request()</code>中有一个<code>while(1)</code>循环。如果处理完一个请求后没有正确调用<code>end_request(1)</code>（标记请求完成），或者判断请求结束的条件写错了，循环会永远运行下去。更隐蔽的变体是：你处理了请求但没有从队列中移除它，下次同样的请求再次被处理——无限循环。参考hd.c的<code>do_hd_request()</code>，注意每一处<code>end_request()</code>的调用逻辑。</p>
-
-        <div class="warning">
-            <strong>内核panic后怎么办？</strong>在QEMU中运行0.11时，如果遇到内核panic（屏幕显示"Kernel panic: ..."），QEMU会暂停CPU。此时你可以关闭QEMU窗口或按Ctrl+A然后按X退出。如果panic信息不足以定位问题，可以在关键路径上添加<code>printk()</code>输出，重新编译后再次运行。记住——在0.11的环境中，<code>printk()</code>是最可靠的调试手段。
-        </div>
-
-        <h2>结语——RTFSC！</h2>
-
-        <p>至此，我们跨越了整整28章的旅程。让我带你回顾一下我们都走过哪些路：</p>
-
-        <p>我们从<strong>第1章</strong>的"一枚1991年8月25日的新闻组帖子"开始，了解了Linux诞生的历史。然后在<strong>第2-3章</strong>中建立了内核的总览地图和开发环境。在<strong>第4-6章</strong>中，我们跟着<code>bootsect.s</code>、<code>setup.s</code>、<code>head.s</code>的引导流程，一直走到了<code>main()</code>函数。在<strong>第7-9章</strong>中，我们将x86保护模式、GDT/IDT、中断和系统调用的硬件机制一一解锁。</p>
-
-        <p>在<strong>第10-12章</strong>中，我们深入到进程管理的世界——从<code>schedule()</code>的时间片轮转调度算法，到进程的<code>fork()</code>/<code>exit()</code>生命周期，再到信号机制的传递路径。在<strong>第13-15章</strong>中，我们揭开了内存管理的面纱——分页机制、内存分配策略、以及缓冲区管理。</p>
-
-        <p>在<strong>第16-18章</strong>中，我们啃下了课程中最长的一块代码——MINIX文件系统的完整实现，以及pipe和exec的系统调用。在<strong>第19-22章</strong>中，我们研究了块设备驱动（hd.c）和字符设备驱动（串口、键盘、终端）的实现模式。在<strong>第23-25章</strong>中，我们学习了调试技能和动手实践——GDB单步跟踪、添加自己的系统调用。</p>
-
-        <p>在<strong>第26-27章</strong>中，我们回顾了从0.11到1.0的关键演化路径，然后与3000万行的现代Linux内核做了对比分析。最后，在这<strong>第28章</strong>中，你动手实现了一个真正运行在内核中的功能。</p>
-
-        <p>这一路走来，你做了大多数计算机专业学生不会做的事情——你一行一行地读过一个真实操作系统内核的源代码。这不是一件容易的事情，如果你坚持到了这里，你已经超越了99%的开发者。Linus本人在2000年的一次采访中说过：<strong>"如果你想理解操作系统，你必须读源码。没有第二条路。"</strong>——你已经在走这条唯一的道路了。</p>
-
-        <div class="tip">
-            <strong>课程结束了，但真正的旅程才刚刚开始</strong>：学完0.11之后，你有几个自然的进阶方向。如果你对文件系统感兴趣，可以去读ext2/ext4的源码（<code>fs/ext4/</code>），你会发现VFS的接口和我们学过的完全一致。如果你对网络栈感兴趣，从<code>net/ipv4/</code>开始，对照你读过的BSD Socket层代码。如果你对现代调度器感兴趣，打开<code>kernel/sched/fair.c</code>，看CFS的<code>pick_next_task_fair()</code>——那是0.11中schedule()的现代后裔。更重要的是——<strong>去读你想读的代码</strong>。找到一个让你好奇的问题，找到对应的内核模块，打开源代码，逐行理解它。
-        </div>
-
-        <p>作为最后的礼物，我想把Linus在Linux内核邮件列表中说过的一句话送给你——这句话定义了Linux内核社区的"文化基因"：</p>
-
-        <pre><code>"Don't bother me with your problems — show me the code."
-            — Linus Torvalds, linux-kernel mailing list
-
-他的意思是：不要只说"我觉得有个bug"，而是把代码贴出来。代码不会撒谎。代码是最真实的文档、最准确的设计说明、最诚实的注释。
-
-RTFSC — Read The F***ing Source Code.
-
-这三万个函数、三千万行代码、三十年的工程积累——它们全部公开、全部免费、全部等着你去阅读和理解。
-
-课程结束了，但你的源代码阅读之旅才刚刚开始。
-
-去吧，去读你想读的代码。
-</code></pre>
-
-        <p>感谢你跟我走完这28章的学习旅程。希望这些知识会在你的职业生涯中发挥意想不到的作用。</p>
-
-        <p><strong>RTFSC，有缘再见！</strong></p>
-
-        <div class="footer-nav">
-            <a href="27.html">← 上一章</a>
-            <a href="index.html">📖 返回目录</a>
-            <a href="../index.html">↗ 返回课程首页</a>
-        </div>
-    </div>
-</div>
-</div>
-</body>
-</html>
+sudo insmod kernel_lab_proc.ko
+cat /proc/kernel_lab
+sudo rmmod kernel_lab_proc
+test ! -e /proc/kernel_lab &amp;&amp; echo removed</code></pre></div><p>这个示例使用当前 procfs/module API；具体接口应以目标内核版本的头文件为准。外部模块构建方式见 <a href="https://docs.kernel.org/kbuild/modules.html" target="_blank" rel="noopener noreferrer">Kbuild External Modules</a>。只在可回滚的测试 VM 中加载模块；模块与内核共享特权，不是沙箱。</p></section>
+<section id="acceptance" aria-labelledby="acceptance-heading"><h2 id="acceptance-heading">验收矩阵：把静态检查、guest 测试和现代模块测试分开</h2><figure class="figure" tabindex="0" aria-label="可横向滚动的技术图解"><img src="../assets/svg/28-validation.svg" loading="lazy" alt="三层验收：host 纯算术测试、0.11 guest block-device read/write、现代 Linux procfs module load/read/unload" width="960" height="480"><figcaption>不同实验目标验证不同层次，不能用一个 PASS 代替全部。</figcaption></figure><table><thead><tr><th>层次</th><th>操作</th><th>通过条件</th><th>不能证明什么</th></tr></thead><tbody><tr><td>Host model</td><td>unittest 边界用例</td><td>最后一扇区通过，越界/零长度拒绝</td><td>不证明内核 C 补丁编译成功</td></tr><tr><td>0.11 guest</td><td>ramdisk_selftest</td><td>写 1KiB 后读回字节完全一致</td><td>不证明 swap-style NULL bh 请求路径</td></tr><tr><td>0.11 boundary</td><td>最后有效块 / 下一块</td><td>有效请求成功，越界请求报告 I/O error，不破坏相邻内存</td><td>不证明所有硬件/工具链组合</td></tr><tr><td>Modern module</td><td>insmod → cat → rmmod</td><td>/proc entry 创建、可读、卸载后消失</td><td>不证明 0.11 procfs API 兼容</td></tr><tr><td>Repository CI</td><td>HTML/SVG/static/browser</td><td>链接、页面、图示和响应式验收通过</td><td>不等于 QEMU 启动或内核镜像实测</td></tr></tbody></table><p>故障定位顺序：先核对 <code>RAMDISK</code> 是否编译启用和内存容量；再核对设备节点是否是 <code>b 1 1</code>；接着检查 <code>sector/nr_sectors</code> 单位是否按 512B 计算；最后检查 request_fn 是否注册、rootfs 镜像是否从 block 256 起始并通过 MINIX superblock 校验。</p><details class="question"><summary>为什么不能创建 /dev/ram0 b 1 0？（展开核对）</summary><p>0.11 ramdisk.c 明确要求 MINOR(CURRENT->dev)==1，rd_load 成功后也把 ROOT_DEV 设置为 0x0101，即 major 1 minor 1。</p></details><details class="question"><summary>为什么不能用现代 kmalloc/GFP_KERNEL 写 0.11 RAM Disk？（展开核对）</summary><p>因为 0.11 的驱动在启动阶段由 rd_init() 预留连续内存，并从 main_memory_start 扣除；现代 kmalloc/GFP_KERNEL 和 gendisk API 不属于这个版本。</p></details></section>
+<section id="deliver" aria-labelledby="deliver-heading"><h2 id="deliver-heading">最终交付物与源码阅读复盘</h2><ul><li><code>labs/28/ramdisk_range_check.diff</code>：0.11 请求边界与通用错误日志的补丁。</li><li><code>labs/28/ramdisk_selftest.c</code>：guest 用户态写入/读回测试。</li><li><code>tests/test_ramdisk_bounds.py</code>：主机端纯算术边界测试。</li><li><code>labs/28/kernel_lab_proc.c</code>、<code>Kbuild</code>、<code>Makefile</code>：现代 procfs 模块可选实验。</li><li><code>docs/evidence/28.json</code>：逐项标注源码版本、证据链接和验收层级。</li></ul><p>至此课程形成一条完整路径：从 0.11 启动、内存、调度、文件系统和设备驱动，走到早期 Linux 版本演进，再把历史机制映射到现代 Linux 的页分配、调度、模块与 BPF。最重要的能力不是记住某个 API，而是能够从一个真实请求出发，沿着状态、数据结构和错误分支找到源代码证据，并明确实验究竟证明了什么。</p></section><nav class="article-pager" aria-label="前后章节"><a href="27.html">← 27 / 前一章</a><a href="../index.html">29 / 后一章 →</a></nav></article></main></div><footer class="site-footer"><div class="shell">项目版本边界：RAM Disk 部分仅针对 Linux 0.11；proc_ops 部分仅针对现代 Linux。静态/模型测试不能替代历史工具链与 QEMU guest 实测。 <a href="../index.html">课程首页</a></div></footer></body></html>

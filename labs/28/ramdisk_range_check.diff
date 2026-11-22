@@ -1,0 +1,42 @@
+diff --git a/kernel/blk_drv/ramdisk.c b/kernel/blk_drv/ramdisk.c
+--- a/kernel/blk_drv/ramdisk.c
++++ b/kernel/blk_drv/ramdisk.c
+@@
+ void do_rd_request(void)
+ {
+ int len;
+ char *addr;
++unsigned long capacity, sector, count;
+ 
+ INIT_REQUEST;
+-addr = rd_start + (CURRENT->sector << 9);
+-len = CURRENT->nr_sectors << 9;
+-if ((MINOR(CURRENT->dev) != 1) || (addr+len > rd_start+rd_length)) {
++capacity = (unsigned long)rd_length >> 9;
++sector = CURRENT->sector;
++count = CURRENT->nr_sectors;
++if ((MINOR(CURRENT->dev) != 1) || !count ||
++    sector > capacity || count > capacity - sector) {
+     end_request(0);
+     goto repeat;
+ }
++addr = rd_start + (sector << 9);
++len = count << 9;
+ if (CURRENT-> cmd == WRITE) {
+@@
+ }
+ diff --git a/kernel/blk_drv/blk.h b/kernel/blk_drv/blk.h
+--- a/kernel/blk_drv/blk.h
++++ b/kernel/blk_drv/blk.h
+@@
+ if (!uptodate) {
+ printk(DEVICE_NAME " I/O error\\n\\r");
+-printk("dev %04x, block %d\\n\\r",CURRENT->dev,
+-       CURRENT->bh->b_blocknr);
++if (CURRENT->bh)
++    printk("dev %04x, block %d\\n\\r", CURRENT->dev,
++           CURRENT->bh->b_blocknr);
++else
++    printk("dev %04x, sector %lu\\n\\r", CURRENT->dev,
++           CURRENT->sector);
+ }
