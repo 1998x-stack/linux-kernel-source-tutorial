@@ -99,6 +99,15 @@
         ]
       },
       "status": "verified"
+    },
+    {
+      "id": "C27-11",
+      "claim": "The Linux kernel bpftool feature probe explicitly detects bounded-loop support; modern eBPF does not reject every loop.",
+      "source": {
+        "url": "https://github.com/torvalds/linux/blob/master/tools/bpf/bpftool/feature.c",
+        "symbol": "probe_bounded_loops"
+      },
+      "status": "verified"
     }
   ]
 }

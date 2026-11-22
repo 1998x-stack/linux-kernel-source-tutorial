@@ -43,7 +43,7 @@
       "id": "C26-04",
       "claim": "v0.95 is an early VFS integration stage; the release note explicitly limits claims about completeness.",
       "source": {
-        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.95/README",
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.95",
         "symbol": "release notes / VFS status"
       },
       "status": "verified"
@@ -61,7 +61,7 @@
       "id": "C26-06",
       "claim": "v0.98 contains TCP/IP source files, but its release note says TCP/IP was not in the standard boot image and had not yet been fully tested.",
       "source": {
-        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.98/README",
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.98",
         "symbols": [
           "TCP/IP 0.8.1 release note",
           "boot image status"
@@ -73,8 +73,9 @@
       "id": "C26-07",
       "claim": "v0.99 source includes NFS filesystem implementation and registration.",
       "source": {
-        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.99/fs/filesystems.c",
-        "symbol": "CONFIG_NFS_FS / nfs_read_super"
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.99",
+        "symbol": "CONFIG_NFS_FS / nfs_read_super",
+        "code_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.99/fs/filesystems.c"
       },
       "status": "verified"
     },
