@@ -1,4 +1,4 @@
-# 0.11 源码研究与证据账本（第一、二批 01–10）
+# 0.11 源码研究与证据账本（第一至三批 01–15）
 
 本表对应 **Linux 0.11**，不将 0.12、现代 Linux 或改造后的教学 fork 混进历史断言。原始代码使用古老汇编语法，摘录前必须核对版本和文件名。
 
@@ -23,11 +23,11 @@
 - 原 02 章“14 个源码目录”的断言没有严格标出层级，且旧稿可能混用现代 `vmlinux` 术语。
 - 原 05 章 `AX=0xE801` 与原始 0.11 源码不符；已以 `AH=0x88` 重写。
 - 原 04 章含复位向量物理地址不严谨的直接算术推导；新文与 BIOS 装载 0x7C00 的事件严格分开。
-- 11–28 目前为迁移保存，不属于这轮事实审计已通过范围。
+- 16–28 目前为迁移保存，不属于这轮事实审计已通过范围。
 
 ## 未来核验任务
 
-逐篇验证 11–28 中实际代码、API、数据结构和边界条件；尤其注意 `mem_init`、系统调用、8259、fork、MINIX 文件系统、TTY、驱动接口和现代内核对比。每次重写要先扩充此账本，再生成插图。
+逐篇验证 16–28 中实际代码、API、数据结构和边界条件；尤其注意 `mem_init`、系统调用、8259、fork、MINIX 文件系统、TTY、驱动接口和现代内核对比。每次重写要先扩充此账本，再生成插图。
 
 ## 第二批 06–10 的逐篇事实审计
 
@@ -48,3 +48,22 @@
 **视觉证据**：`assets/svg/06-*.svg` 至 `assets/svg/10-*.svg` 共 10 张可独立解析的示意图，每个框与连接由以上源码中的调用或状态变化支持，图中教学数字与真实运行测量严格区分。
 
 **第二批质量门禁**：重构稿包含明确版本范围、图标题/说明、叙事、直接原始源码链接、校验命令、可展开自测和前后章导航。CI 验证静态结构、SVG XML 与 1440/390/360 像素宽度下的基本交互；单独的源代码事实复审仍需针对每个细节持续开展。
+
+## 第三批 11–15 真实源码依据与纠错
+
+| 章节 | v0.11 文件 | 可以逐项复核的结论 |
+|---|---|---|
+| 11 | [kernel/system_call.s](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/system_call.s) | _sys_fork 专用入口调用 find_empty_process / copy_process；原稿把其错误写为完整 C 版 sys_fork |
+| 11 | [kernel/fork.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/fork.c) | copy_mem 调 copy_page_tables(from,to,size)，共享写保护页；任务页仅复制 task_struct，不直接复制旧内核栈 |
+| 11 | [fs/exec.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/fs/exec.c) | a.out ZMAGIC、#! 和 executable inode 按需装入；execve 保留 PID，不是 fork |
+| 11 | [kernel/exit.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/exit.c) | do_exit 先 TASK_ZOMBIE + SIGCHLD；waitpid 取状态后调用 release 回收，支持 WNOHANG |
+| 12 | [kernel/signal.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/signal.c) | sys_signal 使用 SA_ONESHOT\|SA_NOMASK，do_signal 准备 7 或 8 个 long 的用户栈帧并写 restorer |
+| 12 | [kernel/system_call.s](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/system_call.s) | 返回用户态的系统调用/时钟路径识别 signal & ~blocked，不是任意硬件中断即时执行 handler |
+| 13 | [mm/memory.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/mm/memory.c) | LOW_MEM=0x100000、PAGING_PAGES=3840、USED=100；get_free_page 反向扫描并清零 4KiB，非 256KiB 起始 |
+| 13 | [init/main.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/init/main.c) | buffer_memory_end/main_memory_start 依 RAM 容量分段选择；不是 1–16MiB 全部直接可分配 |
+| 14 | [mm/memory.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/mm/memory.c) | un_wp_page 单引用恢复可写，多引用复制，TLB 失效；do_no_page 尝试 share_page 或 bread_page 4×1KiB |
+| 14 | [mm/page.s](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/mm/page.s) | 页故障低级入口读取 CR2 和 CPU 错误码 bit0；按 present 分支选择 do_no_page/do_wp_page |
+| 15 | [include/linux/fs.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/include/linux/fs.h) | BLOCK_SIZE=1024、NR_HASH=307，buffer_head 不存在旧文所写的 b_req 字段 |
+| 15 | [fs/buffer.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/fs/buffer.c) | hash/free_list 双链、BADNESS(dirt,lock) 选择候选，非严格 LRU；brelse 仅减 b_count，sys_sync/sync_dev 负责写回 |
+
+本轮新增 `assets/svg/11-*.svg` 至 `15-*.svg` 共 10 张原创 SVG。各图只展示对应版本支持的因果路径；图中示例计数/页地址为教学演算而非模拟器测量。更新后的 CI 会对前 15 章做 HTML/链接/SVG XML 与三宽度浏览器验收。仍需在后续对 16–28 逐章交叉复核。

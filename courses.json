@@ -118,10 +118,10 @@
       "num": "11",
       "title": "进程生命周期",
       "topics": [
-        "fork()写时复制机制",
-        "execve()加载程序",
-        "exit()与wait()回收",
-        "僵尸进程踩坑故事"
+        "专用 sys_fork 汇编入口",
+        "copy_process 与 COW",
+        "a.out execve 按需装入",
+        "僵尸与 waitpid 回收"
       ],
       "file": "chapters/11.html"
     },
@@ -129,10 +129,10 @@
       "num": "12",
       "title": "信号机制",
       "topics": [
-        "信号数据结构与位图",
-        "发送/递送/处理流程",
-        "sigframe用户栈帧",
-        "sigaction可移植性"
+        "pending/blocked 信号位图",
+        "kill 与权限检查",
+        "用户 handler 与 restorer",
+        "7/8 个 long 的信号帧"
       ],
       "file": "chapters/12.html"
     },
@@ -140,10 +140,10 @@
       "num": "13",
       "title": "内存管理(上)",
       "topics": [
-        "物理内存布局分区",
-        "mem_map页框管理",
-        "get_free_page分配",
-        "线性地址空间布局"
+        "LOW_MEM=1MiB",
+        "mem_map 字节引用计数",
+        "4KiB 逆向页分配",
+        "free_page 与 USED=100"
       ],
       "file": "chapters/13.html"
     },
@@ -151,10 +151,10 @@
       "num": "14",
       "title": "内存管理(下)",
       "topics": [
-        "两级页表结构详解",
-        "线性地址翻译示例",
-        "do_wp_page写时复制",
-        "页表不一致幽灵Bug"
+        "10/10/12 两级页表",
+        "#PF 与 CR2 分派",
+        "do_wp_page 写时复制",
+        "do_no_page 文件按需加载"
       ],
       "file": "chapters/14.html"
     },
@@ -162,10 +162,10 @@
       "num": "15",
       "title": "缓冲区管理",
       "topics": [
-        "buffer_head数据结构",
-        "LRU缓冲区淘汰策略",
-        "getblk/brelse源码",
-        "bread/bwrite块读写"
+        "1KiB buffer_head",
+        "307 桶哈希与循环链",
+        "BADNESS 选择而非 LRU",
+        "bread 与 dirty 写回"
       ],
       "file": "chapters/15.html"
     },
