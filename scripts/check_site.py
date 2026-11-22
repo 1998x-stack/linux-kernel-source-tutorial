@@ -60,14 +60,15 @@ def main():
         h=Inspector()
         data=path.read_text(encoding='utf-8')
         h.feed(data)
-        if i <= 20:
+        redesigned = ('assets/css/site.css' in data)
+        if redesigned:
             if h.h1!=1: bad(f'{path}: expected 1 H1, got {h.h1}')
             if len(h.sections)<5: bad(f'{path}: requires >= 5 self-contained sections')
             if not h.images: bad(f'{path}: visual explanation missing')
             if 'v0.11' not in data and 'Linux 0.11' not in data: bad(f'{path}: version scope missing')
             if 'Olah-style' in data or '本讲义介绍' in data: bad(f'{path}: workflow boilerplate found')
             if '<details' not in data: bad(f'{path}: missing native interactive self-check')
-        if i>20 and 'theme.css' not in data: bad(f'{path}: legacy stylesheet unexpectedly missing')
+        elif 'theme.css' not in data: bad(f'{path}: legacy stylesheet unexpectedly missing')
         check_refs(path,h)
         redirect=ROOT/f'{num}.html'
         if not redirect.exists() or f'chapters/{num}.html' not in redirect.read_text(encoding='utf-8'):
@@ -109,10 +110,14 @@ def main():
     if (ROOT/'chapters/theme.css').read_text(encoding='utf-8').startswith('<!--'):
         bad('chapters/theme.css: invalid HTML comment')
     if not (ROOT/'AGENTS.md').is_file(): bad('missing AGENTS.md')
+    redesigned_count = sum(
+        1 for i in range(1,29)
+        if 'assets/css/site.css' in (ROOT/'chapters'/f'{i:02d}.html').read_text(encoding='utf-8')
+    )
     if ISSUES:
         for issue in ISSUES: print('FAIL',issue)
         return 1
-    print('PASS static validation: 28 chapters, 28 redirects, 20 redesigned articles, links and SVGs.')
+    print(f'PASS static validation: 28 chapters, 28 redirects, {redesigned_count} redesigned articles, links and SVGs.')
     return 0
 if __name__=='__main__':
     sys.exit(main())
