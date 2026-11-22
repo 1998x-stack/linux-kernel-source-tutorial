@@ -66,7 +66,7 @@
 | 15 | [include/linux/fs.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/include/linux/fs.h) | BLOCK_SIZE=1024、NR_HASH=307，buffer_head 不存在旧文所写的 b_req 字段 |
 | 15 | [fs/buffer.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/fs/buffer.c) | hash/free_list 双链、BADNESS(dirt,lock) 选择候选，非严格 LRU；brelse 仅减 b_count，sys_sync/sync_dev 负责写回 |
 
-本轮新增 `assets/svg/11-*.svg` 至 `15-*.svg` 共 10 张原创 SVG。各图只展示对应版本支持的因果路径；图中示例计数/页地址为教学演算而非模拟器测量。更新后的 CI 会对前 25 章做 HTML/链接/SVG XML 与三宽度浏览器验收。仍需在后续对 21–28 逐章交叉复核。
+本轮新增 `assets/svg/11-*.svg` 至 `15-*.svg` 共 10 张原创 SVG。各图只展示对应版本支持的因果路径；图中示例计数/页地址为教学演算而非模拟器测量。更新后的 CI 会对前 25 章做 HTML/链接/SVG XML 与三宽度浏览器验收。仍需在后续对 26–28 逐章交叉复核。
 
 ## 第四批 16–20：MINIX、路径、管道和块 I/O 的源码事实审计
 
