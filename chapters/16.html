@@ -1,281 +1,36 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
-    <title>第16章 MINIX文件系统(上)</title>
-    <link rel="stylesheet" href="theme.css">
-</head>
-<body>
-<div class="double-border">
-<div class="container">
-    <div class="sidebar">
-        <h3>🐧 课程目录</h3>
-        <ul class="chapter-list">
-            <li><a href="01.html">01 Linux的诞生</a></li>
-            <li><a href="02.html">02 内核架构总览</a></li>
-            <li><a href="03.html">03 开发环境搭建</a></li>
-            <li><a href="04.html">04 引导启动(上)</a></li>
-            <li><a href="05.html">05 引导启动(下)</a></li>
-            <li><a href="06.html">06 内核初始化</a></li>
-            <li><a href="07.html">07 x86保护模式精要</a></li>
-            <li><a href="08.html">08 中断与异常</a></li>
-            <li><a href="09.html">09 系统调用</a></li>
-            <li><a href="10.html">10 进程调度</a></li>
-            <li><a href="11.html">11 进程生命周期</a></li>
-            <li><a href="12.html">12 信号机制</a></li>
-            <li><a href="13.html">13 内存管理(上)</a></li>
-            <li><a href="14.html">14 内存管理(下)</a></li>
-            <li><a href="15.html">15 缓冲区管理</a></li>
-            <li><a href="16.html" class="active">16 MINIX文件系统(上)</a></li>
-            <li><a href="17.html">17 MINIX文件系统(下)</a></li>
-            <li><a href="18.html">18 管道与exec</a></li>
-            <li><a href="19.html">19 块设备驱动(上)</a></li>
-            <li><a href="20.html">20 块设备驱动(下)</a></li>
-            <li><a href="21.html">21 字符设备驱动(上)</a></li>
-            <li><a href="22.html">22 字符设备驱动(下)</a></li>
-            <li><a href="23.html">23 内核调试技术</a></li>
-            <li><a href="24.html">24 GDB单步跟踪</a></li>
-            <li><a href="25.html">25 动手写系统调用</a></li>
-            <li><a href="26.html">26 从0.11到1.0</a></li>
-            <li><a href="27.html">27 现代内核对比</a></li>
-            <li><a href="28.html">28 综合项目</a></li>
-        </ul>
-    </div>
-    <div class="main-content">
-        <p>大家好，我是你们的讲师。上一章我们深入分析了缓冲区管理——它是内核I/O子系统的基石。但缓冲区只解决了"如何高效地读写磁盘块"的问题，还有一个更上层的问题需要解决：<strong>如何组织磁盘上的数据，让用户可以通过"文件名"和"目录"来访问，而不是直接操作块号？</strong>答案就在文件系统中。</p>
-
-        <p>本章和下一章将专门研究<strong>MINIX文件系统</strong>——Linux 0.11使用的原生文件系统。它由Andrew Tanenbaum设计，是MINIX操作系统的一部分，也是Linus最早移植到Linux上的文件系统。</p>
-
-        <h2>引言——为什么是MINIX文件系统？</h2>
-
-        <p>你可能在想：MINIX文件系统？这太古老了吧？为什么不讲ext4或Btrfs？</p>
-
-        <p>答案是：<strong>MINIX文件系统是现代文件系统的"最小公倍数"</strong>。它包含了一个文件系统应该具备的所有核心要素：超级块、inode、位图、目录项、间接块索引——但它剔除了现代文件系统中大量的复杂性（如日志、B树、扩展属性、ACL等）。如果你能彻底理解MINIX文件系统，阅读ext2/ext3（以及任何UNIX风格文件系统）的源码将易如反掌。</p>
-
-        <div class="tip">
-            <strong>历史小知识</strong>：Linux 0.11使用MINIX文件系统，纯粹是因为Linus当时正在用MINIX，所以直接复用了它的磁盘布局。直到1992年，Theodore Ts'o（我们在第1章提过他）才开发了专门为Linux设计的ext文件系统。今天，我们可以在一个Linux系统上同时挂载MINIX、ext2、ext4、XFS等多种文件系统——这就是<strong>虚拟文件系统（VFS）</strong>的力量。不过VFS是后续版本才引入的，0.11还没有VFS层，文件系统是直接硬编码的。
-        </div>
-
-        <h2>MINIX磁盘布局</h2>
-
-        <p>一个被格式化为MINIX文件系统的磁盘分区，在逻辑上被划分为6个连续的区域。理解这个布局是理解文件系统的第一步。</p>
-
-        <pre><code>MINIX文件系统磁盘布局（整个磁盘分区）：
-
-        偏移量(块号)   区域             大小          作用
-        ┌──────────┐
-        │ 引导块    │   第0块(1KB)     存储引导扇区代码
-        ├──────────┤                 （在文件系统格式化时保留，
-        │          │                  通常为全0，不从文件系统访问）
-        ├──────────┤
-        │ 超级块    │   第1块(1KB)     存储文件系统全局元数据：
-        │          │                  总inode数、总块数、位图块数等
-        ├──────────┤
-        │ inode位图 │   可变大小       每1位表示1个inode的占用/空闲
-        │          │   按块对齐        1块(1024字节)可管理8192个inode
-        ├──────────┤
-        │ 块位图    │   可变大小       每1位表示1个数据块的占用/空闲
-        │          │   按块对齐        1块可管理8192个数据块
-        ├──────────┤
-        │ inode区   │   可变大小       连续存放所有inode结构体
-        │          │   每个inode 32字节  每个文件/目录对应一个inode
-        ├──────────┤
-        │ 数据区    │   剩余所有块       存放文件的数据内容
-        │          │                    和目录的目录项数据
-        └──────────┘</code></pre>
-
-        <p>这种布局的优雅之处在于它的<strong>静态分割</strong>：格式化时，inode的总数量就是固定的，数据块的总数量也是固定的。这使得位图管理变得非常简单——你永远不会遇到"inode用完了但数据块还剩很多"或者反过来"数据块用完了但inode还剩很多"的奇怪情况（好吧，其实可能的——这就是为什么ext4引入了动态inode分配）。</p>
-
-        <h2>超级块(super_block)</h2>
-
-        <p>超级块是文件系统的"身份证"和"账本"，它记录了整个文件系统的全局信息。MINIX文件系统在磁盘上有一个<strong>磁盘超级块</strong>（存储在分区第1块），启动时被读入内存形成<strong>内存超级块</strong>。</p>
-
-        <p>磁盘超级块的定义如下：</p>
-
-        <pre><code>struct d_super_block {
-    unsigned short s_ninodes;     /* inode总数 */
-    unsigned short s_nzones;      /* 总块数（zones） */
-    unsigned short s_imap_blocks; /* inode位图占用的块数 */
-    unsigned short s_zmap_blocks; /* 块位图占用的块数 */
-    unsigned short s_firstdatazone; /* 第一个数据块的块号 */
-    unsigned short s_log_zone_size; /* 日志块大小（MINIX中为0） */
-    unsigned long s_max_size;     /* 最大文件长度 */
-    unsigned short s_magic;       /* 魔数（标识文件系统类型） */
-};</code></pre>
-
-        <p>关键字段解读：</p>
-
-        <ul>
-            <li><strong>s_magic</strong>：魔数，MINIX文件系统为<code>0x137F</code>（MINIX V1）或<code>0x138F</code>（MINIX V1的变体）。如果超级块读出来魔数不对，内核会拒绝挂载——这是一个快速校验。</li>
-            <li><strong>s_ninodes</strong>：inode的总数量。假设<code>s_ninodes = 1024</code>，则inode位图需要 <code>1024/8 = 128</code> 字节，按块对齐就是1个块（1024字节）。</li>
-            <li><strong>s_firstdatazone</strong>：第一个数据块的块号。这是从分区起始算起的绝对块号，通过它计算数据区的起始位置。</li>
-            <li><strong>s_max_size</strong>：单个文件的最大大小。在MINIX V1中，由于只有7个直接块+1个间接块+1个双重间接块，最大文件大小大约是 <code>7*1KB + 256*1KB + 256*256*1KB ≈ 64MB</code>。</li>
-        </ul>
-
-        <p>内存超级块（<code>struct super_block</code>）除了磁盘超级块的字段外，还额外维护了一些运行时状态——例如指向超级块对应<code>buffer_head</code>的指针、脏标志等。<code>read_super()</code>函数负责读取磁盘超级块并填充内存超级块。</p>
-
-        <div class="highlight">
-            <strong>超级块与缓冲区：关键依赖</strong>。注意，超级块本身也是存储在磁盘块上的！<code>read_super()</code>本质上就是调用<code>bread(dev, 1)</code>——读取设备上第1块（引导块是第0块，超级块是第1块），然后将读取到的数据强制类型转换为<code>struct d_super_block *</code>。这就是上一章中缓冲区管理对文件系统的支撑作用。
-        </div>
-
-        <h2>inode结构——文件的"身份证"</h2>
-
-        <p>在MINIX文件系统中，每个文件或目录都有一个唯一的<strong>inode</strong>（索引节点）与之对应。inode存储了文件的<strong>元数据</strong>——通俗地说就是"关于数据的数据"。</p>
-
-        <pre><code>struct d_inode {
-    unsigned short i_mode;   /* 文件类型和权限（rwxrwxrwx） */
-    unsigned short i_uid;    /* 文件所有者的用户ID */
-    unsigned long i_size;    /* 文件大小（字节数） */
-    unsigned long i_mtime;   /* 最后修改时间 */
-    unsigned char i_gid;     /* 文件所有者的组ID */
-    unsigned char i_nlinks;  /* 硬链接数（有多少个文件名指向这个inode） */
-    unsigned short i_zone[9]; /* 数据块索引数组（核心！） */
-};</code></pre>
-
-        <p>每个inode占用32字节（固定大小），所以一个块（1024字节）恰好可以存放32个inode。inode号从1开始计数（0表示无效），inode1通常是根目录。</p>
-
-        <p>让我们聚焦最重要的字段——<code>i_zone[9]</code>。这个数组定义了文件数据在磁盘上的存放位置。</p>
-
-        <table>
-            <thead>
-                <tr><th>数组索引</th><th>名称</th><th>寻址方式</th><th>可寻址的数据块</th></tr>
-            </thead>
-            <tbody>
-                <tr><td>i_zone[0]</td><td>直接块0</td><td>直接指向数据块</td><td>1个块（1KB）</td></tr>
-                <tr><td>i_zone[1]</td><td>直接块1</td><td>同上</td><td>1个块</td></tr>
-                <tr><td>i_zone[2]</td><td>直接块2</td><td>同上</td><td>1个块</td></tr>
-                <tr><td>i_zone[3]</td><td>直接块3</td><td>同上</td><td>1个块</td></tr>
-                <tr><td>i_zone[4]</td><td>直接块4</td><td>同上</td><td>1个块</td></tr>
-                <tr><td>i_zone[5]</td><td>直接块5</td><td>同上</td><td>1个块</td></tr>
-                <tr><td>i_zone[6]</td><td>直接块6</td><td>同上</td><td>1个块</td></tr>
-                <tr><td>i_zone[7]</td><td>一级间接块</td><td>指向一个块，该块存储256个块号</td><td>256个块（256KB）</td></tr>
-                <tr><td>i_zone[8]</td><td>二级间接块</td><td>指向一个块，该块存储256个间接块号，每个间接块再存储256个块号</td><td>65,536个块（64MB）</td></tr>
-            </tbody>
-        </table>
-
-        <p>这种多级索引的设计极为精妙。对于小文件（7KB以内），只需要使用直接块，<strong>一次磁盘I/O就能读取所有索引信息</strong>。随着文件变大，逐步启用一级间接块、二级间接块.这样既保证了小文件的访问效率，又支持了大文件的扩展。</p>
-
-        <p>在Linux 0.11中，<code>i_zone</code>的每个元素是<code>unsigned short</code>（16位），所以最大块号是65,535。再加上块大小为1KB，每个MINIX分区的最大容量就是64MB——这在1991年是非常合理的。</p>
-
-        <h2>位图管理——分配与释放</h2>
-
-        <p>位图是文件系统中用来追踪"哪些资源已经被占用"的关键机制。MINIX文件系统有两张位图：<strong>inode位图</strong>（追踪inode的使用情况）和<strong>块位图</strong>（追踪数据块的使用情况）。</p>
-
-        <h3>new_inode()——分配一个空闲inode</h3>
-
-        <pre><code>int new_inode(int dev)
-{
-    struct super_block * sb = get_super(dev);
-    struct buffer_head * bh;
-    int i, j;
-
-    // 遍历inode位图中的每一位
-    for (i = 0; i &lt; sb-&gt;s_imap_blocks; i++) {
-        bh = bread(dev, 2 + i); // 第2块开始是inode位图
-        j = 0;
-        // 在一个块中寻找第一个值为0的位
-        while (j < 8192 && (bh-&gt;b_data[j >> 3] & (1 << (j & 7))))
-            j++;
-        if (j < 8192) {
-            // 找到了空闲位！标记为已使用
-            bh-&gt;b_data[j >> 3] |= (1 << (j & 7));
-            bh-&gt;b_dirt = 1;     // 标记脏，后续写回磁盘
-            brelse(bh);
-            // 返回inode号（位图中的位置+1, 因为inode从1开始编号）
-            return i * 8192 + j + 1;
-        }
-        brelse(bh);
-    }
-    return 0;  // 没有空闲inode了
-}</code></pre>
-
-        <h3>free_inode()——释放一个inode</h3>
-
-        <pre><code>void free_inode(int dev, int inr)
-{
-    struct super_block * sb = get_super(dev);
-    struct buffer_head * bh;
-
-    // 计算inode在位图中的位置
-    inr--;  // inode号从1开始，转回0基索引
-    // 在位图块中的偏移：inr/8192决定是哪个位图块
-    bh = bread(dev, 2 + inr / 8192);
-    // 将对应的位清零
-    bh-&gt;b_data[(inr % 8192) >> 3] &amp;= ~(1 << ((inr % 8192) & 7));
-    bh-&gt;b_dirt = 1;  // 标记脏
-    brelse(bh);
-}</code></pre>
-
-        <p><code>new_block()</code>和<code>free_block()</code>的操作逻辑完全对称，区别在于它们操作的是块位图，而块位图的起始块号是 <code>2 + s_imap_blocks</code>。</p>
-
-        <p>这里有一个重要细节：位图被修改后，<code>b_dirt</code>被置为1。还记得上一章讲的延迟写策略吗？这就意味着位图的写入不是立即发生的——它在缓冲区中等待，直到被<code>sync()</code>或缓冲区回收时刷入磁盘。这提供了一个天然的"批量写入"效果：创建多个文件时，位图块只被写入一次，而不是每个文件创建都写一次。</p>
-
-        <h2>挂载(mount)流程</h2>
-
-        <p>当系统启动时，根文件系统需要通过<code>mount</code>流程加载。在Linux 0.11中，内核在初始化阶段调用 <code>mount_root()</code> 来完成根文件系统的挂载。让我们追踪它的完整流程。</p>
-
-        <pre><code>void mount_root(void)
-{
-    int i, dev;
-    struct super_block * p;
-    struct inode * ip;
-
-    // 1. 获取根设备号（由启动参数指定，通常为软盘或硬盘分区）
-    dev = ROOT_DEV;
-
-    // 2. 读取超级块
-    // read_super() 内部调用 bread(dev, 1) 读取第1块
-    // 然后校验 s_magic 是否为 0x137F
-    p = read_super(dev);
-
-    // 3. 获取根目录的inode（inode号固定为1）
-    // iget() 从inode区读取第1个inode
-    ip = iget(dev, ROOT_INO);  // ROOT_INO = 1
-
-    // 4. 将根目录的inode设为当前进程的当前目录和工作目录
-    current-&gt;pwd = ip;
-    current-&gt;root = ip;
-
-    // 5. 初始化缓冲区（确保根文件系统相关的缓冲区准备好）
-    // ... 初始化完成
-}</code></pre>
-
-        <p>这个过程看起来简单，但背后做了几个关键的事情：</p>
-
-        <ul>
-            <li><strong>read_super()</strong>不仅读取了磁盘超级块，还在内存中创建了一个<code>struct super_block</code>结构，并将它缓存在<code>super_block[]</code>数组中（Linux 0.11最多支持8个同时挂载的文件系统）。</li>
-            <li><strong>iget(dev, 1)</strong>从磁盘上读取inode区中的第一个inode（根目录的inode），并将其装入内存的inode表（<code>inode_table[]</code>）。这个inode的<code>i_mode</code>必须是一个<strong>目录</strong>类型（S_IFDIR），否则挂载会失败。</li>
-            <li>根挂载完成后，所有路径解析将从根目录inode开始。也就是说，你输入<code>/usr/bin/sh</code>时，内核会从根inode出发，一步步向下查找。</li>
-        </ul>
-
-        <div class="warning">
-            <strong>注意</strong>：Linux 0.11还没有VFS层，所以它只能支持<strong>一种</strong>文件系统——MINIX。所有文件系统操作函数（<code>minix_readdir()</code>、<code>minix_file_read()</code>等）都是直接调用的，没有函数指针表。现代内核中的VFS通过<code>file_operations</code>和<code>inode_operations</code>这样的操作结构体来实现多文件系统支持——这是架构上的一个重大改进。
-        </div>
-
-        <h2>踩坑故事——超级块损坏的灾难</h2>
-
-        <p>在我早年做系统管理员的时候，遇到过一起经典的"掉电事故"。一台运行Linux的服务器在半夜突然断电，第二天管理员启动机器，发现根文件系统<strong>完全无法挂载了</strong>。</p>
-
-        <p>现象是这样的：引导加载程序正常启动，内核被加载到内存，但在<code>mount_root()</code>阶段打印了一条神秘的消息：<code>"VFS: Unable to mount root fs"</code>。进入紧急shell后，用<code>dd</code>命令直接读取磁盘超级块，发现<code>s_magic</code>字段变成了<code>0x0000</code>而非正常的<code>0x137F</code>——超级块<strong>被清零了</strong>。</p>
-
-        <p>原因复盘：断电发生时，系统正在执行<code>sync()</code>写回脏缓冲区。超级块正好是脏的（可能因为刚刚安装了一个新软件，更新了文件的访问时间等信息，导致超级块中的某些计数发生了变化），但<code>sync()</code>还没来得及把它刷入磁盘，电源就断了。磁盘上的超级块还是旧的？不——情况比这更糟。因为延迟写的策略，磁盘超级块可能在<strong>更早</strong>的某个时刻被部分写入了错误的数据，或者因为磁头在写入过程中停在了一个错误的位置。</p>
-
-        <p>这就是文件系统日志（journaling）诞生的背景。现代文件系统如ext3/ext4、XFS都包含了日志功能：在真正修改磁盘上的元数据之前，先将操作记录到日志区域。如果系统崩溃，重启后通过<strong>回放日志</strong>（replay journal）可以让文件系统恢复到一致状态。从ext2到ext3，最大的变化就是增加了日志支持。</p>
-
-        <p>至于那次事故的结局——<code>fsck</code>（文件系统一致性检查）工具救了我们。它扫描了整个磁盘分区，通过检测inode位图和实际inode使用情况的一致性、块位图和实际数据块使用情况的一致性，<strong>重建了一个超级块</strong>。虽然丢失了部分文件，但至少系统恢复了启动。那次之后，我养成了两个好习惯：一是给关键服务器配备UPS不间断电源，二是定期备份超级块（<code>dd if=/dev/sda2 of=/superblock.backup bs=1024 count=1</code>）。</p>
-
-        <p>下一章中，我们将继续MINIX文件系统的下半部分——从<strong>路径解析</strong>开始，看看内核如何把一个像<code>/usr/bin/sh</code>这样的字符串，一步步翻译成实实在在的文件数据。</p>
-
-        <p><strong>下一章预告：MINIX文件系统(下)</strong> —— 目录项结构、namei()路径解析、文件描述符表、读写完整路径、open/close实现。</p>
-
-        <div class="footer-nav">
-            <a href="15.html">← 上一章</a>
-            <a href="index.html">📖 返回目录</a>
-            <a href="17.html">下一章 →</a>
-        </div>
-    </div>
-</div>
-</div>
-</body>
-</html>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="从磁盘上的 1KiB 块布局、32 字节 inode 和分层间接寻址出发，沿 read_super、read_inode、new_block 理解持久化元数据。"><title>16 MINIX 文件系统：超级块、位图与九个磁盘区指针 · Linux 0.11 源码精读</title><link rel="stylesheet" href="../assets/css/site.css"></head><body><a class="skip" href="#content">跳转到正文</a><header class="site-header"><div class="header-inner"><a class="brand" href="../index.html"><b>0x011</b> · Linux Kernel Field Guide</a><nav class="top-nav" aria-label="全站导航"><a href="../index.html#chapters">全部章节</a><a href="../index.html#roadmap">学习路径</a><a href="https://github.com/1998x-stack/linux-kernel-source-tutorial">GitHub</a></nav></div></header><div class="article-layout"><aside class="article-toc"><strong>第 16 章 · 目录</strong><nav aria-label="本章目录"><a href="#why">为什么 inode 号不能直接指向文件内容？</a><a href="#disk">superblock 和位图为何必须有固定位置</a><a href="#read-super">read_super 的磁盘读取与内存缓存</a><a href="#inode">为什么 32 字节磁盘 inode 有 9 个 i_zone</a><a href="#inode-read">磁盘 inode 号是如何转成块号的？</a><a href="#bitmaps">bitmap.c 才是 new_inode/new_block 的真实位置</a><a href="#mount">mount_root 与一般挂载如何衔接</a><a href="#verify">检查磁盘结构和源码链路</a><a href="#sources">原始证据与下章入口</a></nav></aside><main id="content" class="article-body"><article><header class="article-header"><span class="eyebrow">CHAPTER 16 / LINUX 0.11</span><h1>MINIX 文件系统：超级块、位图与九个磁盘区指针</h1><p class="subtitle">从磁盘上的 1KiB 块布局、32 字节 inode 和分层间接寻址出发，沿 read_super、read_inode、new_block 理解持久化元数据。</p><span class="pill">MINIX v1 · 1024B · inode/zone</span></header><section id="why" aria-labelledby="why-heading"><h2 id="why-heading">为什么 inode 号不能直接指向文件内容？</h2><p>目录项只有一个 inode 编号和短文件名。文件系统必须先用编号找到磁盘 inode，再根据 <code>i_zone[]</code> 找到该文件实际占用的数据块。如果一个文件变大，连续分配的磁盘块可能不够；MINIX 风格磁盘格式通过“直接区号 + 一级/二级间接区号”解决。</p><p>这里的所有数值都限定于 <strong>Linux 0.11 使用的 MINIX v1 磁盘布局</strong>：每块 1024 字节、磁盘 inode 32 字节、文件名最多 14 字节。这不是现代 Minix v3 或 ext4 结构。</p><figure class="figure" tabindex="0" aria-label="可横向滚动的技术图解"><img src="../assets/svg/16-minix-layout.svg" loading="lazy" alt="从保留块0、超级块1、inode位图、zone位图、inode表到数据区的 MINIX 磁盘排列" width="960" height="468"><figcaption>块号为文件系统内的块号，不等同于硬盘扇区；每 1KiB 块通常对应两个 512 字节设备扇区。</figcaption></figure></section>
+<section id="disk" aria-labelledby="disk-heading"><h2 id="disk-heading">superblock 和位图为何必须有固定位置</h2><p>磁盘块 0 预留，块 1 保存 <code>struct d_super_block</code>；从块 2 起，连续放 <code>s_imap_blocks</code> 个 inode 位图块，再放 <code>s_zmap_blocks</code> 个数据区位图块；之后才是固定大小 inode 表和实际数据区。每一个位图块拥有 1024×8=8192 个位，所以要先知道位图块数，才能准确找到后续 inode 表起点。</p><div class="code-frame"><div class="code-caption">include/linux/fs.h — 磁盘超级块字段（准确字段名）</div><pre><code>struct d_super_block {
+  unsigned short s_ninodes, s_nzones;
+  unsigned short s_imap_blocks, s_zmap_blocks;
+  unsigned short s_firstdatazone, s_log_zone_size;
+  unsigned long s_max_size;
+  unsigned short s_magic;
+};</code></pre></div><p><code>s_magic=0x137F</code> 是这个历史格式的标识。<code>s_log_zone_size</code> 表示 zone 大小相对于 1KiB 块的移位量，**不是“日志（journaling）块大小”**；旧文把 log 理解为日志会凭空引入 0.11 并不具有的日志文件系统机制。</p><details class="question"><summary>两个 imap 块理论上提供多少位？（展开核对）</summary><p>2×1024×8=16384 位。但 inode 编号、保留位和超级块声明的 s_ninodes 共同限制有效编号，不能把 16384 直接说成该卷有 16384 个有效 inode。</p></details></section>
+<section id="read-super" aria-labelledby="read-super-heading"><h2 id="read-super-heading">read_super 的磁盘读取与内存缓存</h2><p><a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/fs/super.c" target="_blank" rel="noopener noreferrer">fs/super.c</a> 定义在内存里的 <code>super_block[NR_SUPER]</code>，<code>NR_SUPER=8</code>。<code>read_super(dev)</code> 先查已有缓存和设备变化，再申请空闲槽；<code>bread(dev,1)</code> 从块 1 获取磁盘超级块，并把 <code>d_super_block</code> 的公共字段复制到内存 <code>super_block</code> 前部，检查 <code>SUPER_MAGIC</code>，继续把 inode/zone 位图块缓存进 <code>s_imap[]</code>/<code>s_zmap[]</code>。</p><div class="code-frame"><div class="code-caption">fs/super.c — 调用链所需的真实操作（短节选）</div><pre><code>if (!(bh = bread(dev,1))) { ... }
+*((struct d_super_block *) s) =
+    *((struct d_super_block *) bh-&gt;b_data);
+brelse(bh);
+if (s-&gt;s_magic != SUPER_MAGIC) { ... }</code></pre></div><p>注意 <code>struct super_block</code> 比磁盘结构更大：它还包含内存里的 <code>s_dev</code>、<code>s_wait</code>、<code>s_lock</code>、<code>s_isup</code>、<code>s_imount</code> 和缓存头指针。这些运行时指针并不会按原样写入磁盘超级块。</p><aside class="note"><p>挂载不是只改一个变量。mount_root、sys_mount 需要成功读取 super、取得 inode、关联挂载点，同时保持引用计数；不要将 read_super 本身误认为已经挂载完成。</p></aside></section>
+<section id="inode" aria-labelledby="inode-heading"><h2 id="inode-heading">为什么 32 字节磁盘 inode 有 9 个 i_zone</h2><p><a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/include/linux/fs.h" target="_blank" rel="noopener noreferrer">include/linux/fs.h</a> 中，<code>struct d_inode</code> 包含 <code>i_mode</code>、<code>i_uid</code>、<code>i_size</code>、<code>i_time</code>、<code>i_gid</code>、<code>i_nlinks</code> 和 <code>i_zone[9]</code>。其磁盘结构总计 32 字节，故一块 1024 字节可以容纳 32 个 inode；内存的 <code>struct m_inode</code> 再额外保存缓存引用数、锁、管道/挂载标记等运行时信息。</p><p>九个 16 位区号的角色不是九个普通数据块：<code>zone[0..6]</code> 指向 7 个直接块；<code>zone[7]</code> 指向一个一级间接块，最多保存 512 个 16 位区号；<code>zone[8]</code> 指向二级间接块，可容纳 512×512 个目标区号。</p><figure class="figure" tabindex="0" aria-label="可横向滚动的技术图解"><img src="../assets/svg/16-inode-zones.svg" loading="lazy" alt="九个 i_zone 指针分为 7 个直接区、一级间接以及二级间接，以 16 位区号和 1KiB 块索引数据" width="960" height="468"><figcaption>索引容量是由旧版 _bmap 的 7+512+512*512 边界导出；它不意味着任意磁盘大小都能提供这些块。</figcaption></figure><div class="code-frame"><div class="code-caption">fs/inode.c — 原版 _bmap 上限与直接分支</div><pre><code>if (block &gt;= 7+512+512*512)
+    panic(&quot;_bmap: block&gt;big&quot;);
+if (block&lt;7) {
+    /* inode-&gt;i_zone[block] */
+}
+block -= 7;
+/* 接下来处理 512 个一级索引 */</code></pre></div><details class="question"><summary>逻辑块编号 7 走哪一条映射？（展开核对）</summary><p>0–6 为 7 个直接块；编号 7 在扣除 7 后变成 0，使用 i_zone[7] 的第 0 个一级间接索引。</p></details></section>
+<section id="inode-read" aria-labelledby="inode-read-heading"><h2 id="inode-read-heading">磁盘 inode 号是如何转成块号的？</h2><p><a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/fs/inode.c" target="_blank" rel="noopener noreferrer">fs/inode.c</a> 的 <code>read_inode()</code> 计算磁盘块号：</p><div class="code-frame"><div class="code-caption">read_inode 真实表达式</div><pre><code>block = 2 + sb-&gt;s_imap_blocks + sb-&gt;s_zmap_blocks +
+        (inode-&gt;i_num-1) / INODES_PER_BLOCK;</code></pre></div><p>其中 <code>INODES_PER_BLOCK=1024/32=32</code>。从 inode 编号减 1，是因为编号从 1 起，而数组偏移从 0 起。随后 <code>bread(inode-&gt;i_dev,block)</code> 读取缓存，选择 <code>(i_num-1)%32</code> 的磁盘 inode 记录复制到内存对象。这样，磁盘 inode 位于哪个块和块内哪个 32B 槽就都是可计算量，不需要假设固定的物理内存地址。</p><div class="code-frame"><div class="code-caption">自检：inode 65，在 imap=1、zmap=1 时</div><pre><code>INODES_PER_BLOCK = 32
+inode_no = 65
+disk_block = 2 + 1 + 1 + (inode_no-1)//INODES_PER_BLOCK
+slot = (inode_no-1) % INODES_PER_BLOCK
+print(disk_block,slot)  # 6,0</code></pre></div><p>上例是指定参数下的离线算术，不是从实际 MINIX 镜像中读出的编号或 inode 内容。</p></section>
+<section id="bitmaps" aria-labelledby="bitmaps-heading"><h2 id="bitmaps-heading">bitmap.c 才是 new_inode/new_block 的真实位置</h2><p>旧教程将 <code>new_inode(int dev)</code> 的实现和位图读取混成虚构循环。原版 <a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/fs/bitmap.c" target="_blank" rel="noopener noreferrer">fs/bitmap.c</a> 中，<code>new_inode</code> 与 <code>new_block</code> 使用 <code>find_first_zero</code> 从已经缓存的位图缓冲区寻找空位，<code>set_bit</code> 标为已使用，再令相关 <code>bh-&gt;b_dirt=1</code>。分配数据块后还通过 <code>getblk</code> 取得缓冲区，把数据块清零并标记有效/脏。</p><p><code>free_inode(struct m_inode *)</code> 不是 <code>free_inode(dev,inr)</code> 这个旧文虚构的签名；释放时还要检查 inode 的 <code>i_count</code> 和 <code>i_nlinks</code>。对于已经有多个缓存引用或仍有硬链接的 inode，不能仅凭一个 inode 号清掉位图。<code>free_block(dev,block)</code> 也必须在已分配的数据区范围内操作，并防止关联缓存块仍被多方引用。</p><div class="code-frame"><div class="code-caption">fs/bitmap.c 中的区号转换（short excerpt）</div><pre><code>if ((j=find_first_zero(bh-&gt;b_data))&lt;8192)
+    break;
+/* 分配 zone bitmap 的第 j 位 */
+j += i*8192 + sb-&gt;s_firstdatazone-1;</code></pre></div><aside class="note"><p>位图位号与磁盘区号不完全相同。zmap 的位置计算包含 firstdatazone−1 偏移；直接把第 j 个位映射成磁盘块 j，会错指向超级块和位图区。</p></aside></section>
+<section id="mount" aria-labelledby="mount-heading"><h2 id="mount-heading">mount_root 与一般挂载如何衔接</h2><p>在启动路径中，<a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/fs/super.c" target="_blank" rel="noopener noreferrer">mount_root()</a> 初始化文件对象表，读取根设备超级块，并用 <code>iget(ROOT_DEV,ROOT_INO)</code> 获取根 inode，随后让任务 1 的 root/pwd 指向它。一般挂载时，<code>sys_mount</code> 需要将设备超级块与挂载目录 inode 绑定；路径解析会根据 <code>i_mount</code>/<code>s_imount</code> 处理跨挂载点的路径。</p><p>读取超级块、取得根 inode 和修改任务路径上下文，是三个连续但不能混同的步骤。这说明 <code>mount</code> 不是“把某个磁盘复制到某个目录”。</p></section>
+<section id="verify" aria-labelledby="verify-heading"><h2 id="verify-heading">检查磁盘结构和源码链路</h2><div class="code-frame"><div class="code-caption">只读检索，不修改旧镜像</div><pre><code>grep -n 'struct d_super_block\|struct d_inode\|SUPER_MAGIC' include/linux/fs.h
+grep -n 'read_super\|mount_root\|sys_mount' fs/super.c
+grep -n 'INODES_PER_BLOCK\|_bmap\|read_inode' fs/inode.c
+grep -n 'find_first_zero\|new_inode\|free_inode\|new_block' fs/bitmap.c</code></pre></div><p>预期能够跨四个文件验证：磁盘格式、挂载关系、区号寻址、位图分配。没有实际提供文件系统镜像时，不应宣称已读取到某个磁盘超级块或修复过坏块。</p></section>
+<section id="sources" aria-labelledby="sources-heading"><h2 id="sources-heading">原始证据与下章入口</h2><ol class="source-list"><li><a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/include/linux/fs.h" target="_blank" rel="noopener noreferrer">include/linux/fs.h</a>：MINIX 的磁盘和内存结构。</li><li><a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/fs/super.c" target="_blank" rel="noopener noreferrer">fs/super.c</a>：read_super、mount_root。</li><li><a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/fs/inode.c" target="_blank" rel="noopener noreferrer">fs/inode.c</a>：_bmap、read_inode。</li><li><a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/fs/bitmap.c" target="_blank" rel="noopener noreferrer">fs/bitmap.c</a>：inode/zone 位图分配与回收。</li></ol><p>有了 inode 号和磁盘块，接下来还需要回答：用户输入的 <code>/usr/bin/sh</code> 怎样穿过目录项并变成一个 inode 和文件描述符？</p></section><nav class="article-pager" aria-label="前后章节"><a href="15.html">← 第 15 章</a><a href="17.html">第 17 章 →</a></nav></article></main></div><footer class="site-footer"><div class="shell">历史版本限定：Linux 0.11 / 1991。章节图和可执行演算不等于模拟器实测。<a href="../index.html">课程首页</a></div></footer></body></html>
