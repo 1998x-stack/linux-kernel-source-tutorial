@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="468" viewBox="0 0 960 468" role="img" aria-labelledby="svg-title svg-desc"><title id="svg-title">块层 32 个 request 槽与读优先规则</title><desc id="svg-desc">写操作只能从索引 0..20 申请，读操作可从索引 0..31 申请。</desc><defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#147f80"/></marker><marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#ba6543"/></marker></defs><style>text{font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;fill:#263d40}.title{font-size:23px;font-weight:750}.subtitle{font-size:14px;fill:#647879}.node{font-size:17px;font-weight:700}.detail{font-size:13.5px;fill:#566c70}.small{font-size:12px;fill:#697b7d}.accent{fill:#147f80}.body{font-size:15px}</style><rect width="960" height="468" rx="16" fill="#fffdfa"/><text x="30" y="45" class="title">块层 32 个 request 槽与读优先规则</text><text x="30" y="71" class="subtitle">写操作只能从索引 0..20 申请，读操作可从索引 0..31 申请。</text>
+<rect x="31" y="113" width="265" height="93" rx="12" fill="#eff8f5" stroke="#147f80" stroke-width="1.6"/><text x="45" y="143" class="node">READ / READA</text><text x="45" y="167" class="detail">最多检查 32 个槽</text>
+<rect x="663" y="113" width="265" height="93" rx="12" fill="#fff4ee" stroke="#ba6543" stroke-width="1.6"/><text x="677" y="143" class="node">WRITE / WRITEA</text><text x="677" y="167" class="detail">只检查前 21 个槽</text>
+<rect x="36" y="256" width="606" height="84" rx="10" fill="#e9f6f1" stroke="#147f80" stroke-width="1.6"/>
+<rect x="642" y="256" width="282" height="84" rx="10" fill="#fff3ed" stroke="#ba6543" stroke-width="1.6"/>
+<text x="69" y="289" class="node">request[0] … request[20]</text>
+<text x="73" y="316" class="detail">可供读/写竞争的 21 槽</text>
+<text x="667" y="289" class="node">request[21] … [31]</text>
+<text x="671" y="316" class="detail">只保留给读请求</text>
+<path d="M177 206L177 251" fill="none" stroke="#147f80" stroke-width="2.5" marker-end="url(#a)"/>
+<path d="M794 206L794 251" fill="none" stroke="#ba6543" stroke-width="2.5" marker-end="url(#b)"/>
+<text x="37" y="399" class="detail">索引 20 = floor(32×2/3)−1；请求项不等于排队顺序，后者由 next 链连接。</text></svg>
