@@ -75,6 +75,7 @@ def main():
                     assert scroll_region.evaluate("(el) => el.scrollLeft > 0"), (
                         f"{chapter}: diagram cannot be horizontally scrolled"
                     )
+                    scroll_region.evaluate("(el) => { el.scrollLeft = 0; }")
                 if number in (21, 22, 23, 24, 25, 26, 27, 28):
                     page.screenshot(
                         path=str(reports / f"chapter-{number:02d}-{width}.png"),
