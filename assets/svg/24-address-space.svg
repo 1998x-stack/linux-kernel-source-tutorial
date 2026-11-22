@@ -8,7 +8,7 @@
 <rect x="741" y="110" width="184" height="83" rx="12" class="teal"/><text x="755" y="137" class="node">head.s</text><text x="755" y="159" class="detail">startup_32 at 0</text>
 <rect x="36" y="273" width="264" height="83" rx="12" class="teal"/><text x="50" y="300" class="node">CR3 = 0</text><text x="50" y="322" class="detail">页目录位于物理 0</text>
 <rect x="348" y="273" width="264" height="83" rx="12" class="teal"/><text x="362" y="300" class="node">pg0…pg3</text><text x="362" y="322" class="detail">4 个页表覆盖 16MiB</text>
-<rect x="660" y="273" width="264" height="83" rx="12" class="teal"/><text x="674" y="300" class="node">恒等映射</text><text x="674" y="322" class="detail">linear 0x00100000 → physical 0x00100000</text>
+<rect x="660" y="273" width="264" height="83" rx="12" class="teal"/><text x="674" y="300" class="node">恒等映射</text><text x="674" y="322" class="detail">linear = physical</text>
 <path d="M833 193L166 268" class="line"/>
 <path d="M833 193L480 268" class="line"/>
 <path d="M612 314L656 314" class="line"/>

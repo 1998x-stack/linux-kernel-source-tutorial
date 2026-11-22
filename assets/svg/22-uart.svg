@@ -12,7 +12,7 @@
 <path d="M729 151L773 151" class="line"/>
 <path d="M729 260L773 260" class="line"/>
 <rect x="777" y="110" width="149" height="84" rx="12" class="teal"/><text x="791" y="137" class="node">rs_io.s</text><text x="791" y="159" class="detail">读 IIR，循环分派</text>
-<rect x="777" y="219" width="149" height="84" rx="12" class="teal"/><text x="791" y="246" class="node">read_char / write_char</text><text x="791" y="268" class="detail">read_q / write_q</text>
+<rect x="777" y="219" width="149" height="84" rx="12" class="teal"/><text x="791" y="246" class="node">read / write</text><text x="791" y="268" class="detail">char handlers</text>
 <text x="37" y="362" class="detail">寄存器偏移：0 数据；1 IER；2 IIR；3 LCR；4 MCR；5 LSR；6 MSR。DLAB=1 时 0/1 改为 divisor low/high。</text>
 <text x="37" y="400" class="tiny">0.11 不启用 FCR/FIFO；这里是 8250/16450 兼容寄存器模型，不可把 16550A FIFO 当成已使用。</text>
 <text x="37" y="432" class="detail">rs_init：COM1 向量 0x24，COM2 向量 0x23；rs_io.s 由汇编入口读 IIR 并逐个处理 pending cause。</text></svg>

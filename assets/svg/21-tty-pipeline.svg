@@ -7,8 +7,8 @@
 <rect x="456" y="126" width="194" height="77" rx="12" class="teal"/><text x="470" y="153" class="node">copy_to_cooked()</text><text x="470" y="175" class="detail">tty_io.c</text>
 <path d="M650 164L681 164" class="line"/>
 <rect x="685" y="126" width="132" height="77" rx="12" class="teal"/><text x="699" y="153" class="node">secondary</text><text x="699" y="175" class="detail">cooked / canonical</text>
-<path d="M817 164L847 164" class="line"/>
-<rect x="850" y="126" width="80" height="77" rx="12" class="sand"/><text x="864" y="153" class="node">tty_read()</text><text x="864" y="175" class="detail">user</text>
+<path d="M817 164L824 164" class="line"/>
+<rect x="827" y="126" width="103" height="77" rx="12" class="sand"/><text x="841" y="153" class="node">tty_read()</text><text x="841" y="175" class="detail">user</text>
 <text x="38" y="261" class="node">OUTPUT / 输出路径</text>
 <rect x="35" y="279" width="170" height="77" rx="12" class="teal"/><text x="49" y="306" class="node">用户 write()</text><text x="49" y="328" class="detail">tty_write()</text>
 <path d="M205 317L239 317" class="line"/>
