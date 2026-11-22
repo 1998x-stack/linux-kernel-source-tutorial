@@ -87,7 +87,7 @@
 | 20 | [kernel/system_call.s](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/system_call.s) | hd_interrupt 是汇编 IRQ14 入口，使用 do_hd 指针分派 read_intr/write_intr，不是普通 C 版 do_IRQ |
 | 20 | [kernel/blk_drv/ramdisk.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/blk_drv/ramdisk.c) | rd_init 预留一段内存，do_rd_request 使用 memcpy 和 (sector<<9) 定位；没有运行时 malloc(2MiB) |
 
-本批新增十张 `assets/svg/16-*.svg` 至 `assets/svg/20-*.svg` 原创源码流程图；图中路径、字段和返回分支均可对照上述原版源码，标注的数值例子为教学演算而非运行实验。CI 目标：前 25 章静态结构和 1440/390/360px 浏览器基本交互验收；26–28 保留旧章节，不能据此声称完成源码审计。
+本批新增十张 `assets/svg/16-*.svg` 至 `assets/svg/20-*.svg` 原创源码流程图；图中路径、字段和返回分支均可对照上述原版源码，标注的数值例子为教学演算而非运行实验。（当时的第五批状态说明）CI 目标仅覆盖已重构的 01–25；第六批随后完成 26–28 的独立审校，并在下方更新 28 章验收范围。
 
 
 ## 第五批 21–25：TTY、键盘/串口、内核调试、GDB 与系统调用
