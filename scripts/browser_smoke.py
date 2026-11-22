@@ -38,7 +38,7 @@ def main():
                 page.locator('details').first.locator('summary').click()
                 assert page.locator('details').first.evaluate('(el)=>el.open')
                 assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth'),f'{path} overflow at {width}'
-                if path.endswith(('06.html','08.html','10.html','11.html','21.html')):
+                if path.endswith(('06.html','08.html','10.html','11.html','21.html','22.html')):
                     page.screenshot(path=str(reports/f'chapter-{path.replace("/","-")}-{width}.png'),full_page=True)
                 page.evaluate('window.scrollTo(0,document.body.scrollHeight)')
                 page.wait_for_timeout(500)
