@@ -63,10 +63,10 @@
       "num": "06",
       "title": "内核初始化",
       "topics": [
-        "main.c初始化全景图",
-        "各子系统初始化顺序",
-        "move_to_user_mode",
-        "init()第一个进程"
+        "内存分区与 mem_map",
+        "启动子系统初始化顺序",
+        "iret 进入用户态",
+        "task 0 与 init 进程"
       ],
       "file": "chapters/06.html"
     },
@@ -74,10 +74,10 @@
       "num": "07",
       "title": "x86保护模式精要",
       "topics": [
-        "段描述符与GDT/LDT",
-        "Ring0-3特权级保护",
-        "两级页表地址翻译",
-        "TSS硬件任务切换"
+        "GDT/LDT 选择子",
+        "任务专属用户段基址",
+        "两级分页地址变换",
+        "TSS 硬件任务切换"
       ],
       "file": "chapters/07.html"
     },
@@ -85,10 +85,10 @@
       "num": "08",
       "title": "中断与异常",
       "topics": [
-        "x86中断向量表",
-        "IDT与门描述符",
-        "8259A中断控制器",
-        "asm.s通用中断入口"
+        "IDT 默认门与异常",
+        "8259A 重映射 IRQ",
+        "时钟中断与 EOI",
+        "异常错误码和返回"
       ],
       "file": "chapters/08.html"
     },
@@ -96,10 +96,10 @@
       "num": "09",
       "title": "系统调用",
       "topics": [
-        "int 0x80全流程追踪",
-        "system_call.s源码",
-        "sys_call_table调用表",
-        "参数传递与安全拷贝"
+        "int 0x80 寄存器 ABI",
+        "72 项系统调用表",
+        "内核返回栈帧",
+        "信号与用户内存访问"
       ],
       "file": "chapters/09.html"
     },
@@ -107,10 +107,10 @@
       "num": "10",
       "title": "进程调度",
       "topics": [
-        "task_struct数据结构",
-        "schedule()调度算法",
-        "switch_to()任务切换",
-        "jiffies时钟滴答"
+        "任务状态与 counter",
+        "PIT 时钟与 jiffies",
+        "schedule 扫描与重算",
+        "TSS ljmp 上下文切换"
       ],
       "file": "chapters/10.html"
     },
