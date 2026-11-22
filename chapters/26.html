@@ -1,190 +1,36 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
-    <title>第26章 从0.11到1.0</title>
-    <link rel="stylesheet" href="theme.css">
-</head>
-<body>
-<div class="double-border">
-<div class="container">
-    <div class="sidebar">
-        <h3>🐧 课程目录</h3>
-        <ul class="chapter-list">
-            <li><a href="01.html">01 Linux的诞生</a></li>
-            <li><a href="02.html">02 内核架构总览</a></li>
-            <li><a href="03.html">03 开发环境搭建</a></li>
-            <li><a href="04.html">04 引导启动(上)</a></li>
-            <li><a href="05.html">05 引导启动(下)</a></li>
-            <li><a href="06.html">06 内核初始化</a></li>
-            <li><a href="07.html">07 x86保护模式精要</a></li>
-            <li><a href="08.html">08 中断与异常</a></li>
-            <li><a href="09.html">09 系统调用</a></li>
-            <li><a href="10.html">10 进程调度</a></li>
-            <li><a href="11.html">11 进程生命周期</a></li>
-            <li><a href="12.html">12 信号机制</a></li>
-            <li><a href="13.html">13 内存管理(上)</a></li>
-            <li><a href="14.html">14 内存管理(下)</a></li>
-            <li><a href="15.html">15 缓冲区管理</a></li>
-            <li><a href="16.html">16 MINIX文件系统(上)</a></li>
-            <li><a href="17.html">17 MINIX文件系统(下)</a></li>
-            <li><a href="18.html">18 管道与exec</a></li>
-            <li><a href="19.html">19 块设备驱动(上)</a></li>
-            <li><a href="20.html">20 块设备驱动(下)</a></li>
-            <li><a href="21.html">21 字符设备驱动(上)</a></li>
-            <li><a href="22.html">22 字符设备驱动(下)</a></li>
-            <li><a href="23.html">23 内核调试技术</a></li>
-            <li><a href="24.html">24 GDB单步跟踪</a></li>
-            <li><a href="25.html">25 动手写系统调用</a></li>
-            <li><a href="26.html" class="active">26 从0.11到1.0</a></li>
-            <li><a href="27.html">27 现代内核对比</a></li>
-            <li><a href="28.html">28 综合项目</a></li>
-        </ul>
-    </div>
-    <div class="main-content">
-        <p>大家好，我是你们的讲师。从第1章到第25章，我们一直在Linux 0.11这个"古老"但精炼的操作系统内核中探索。但Linux的故事远远没有停在0.11。事实上，从1991年12月0.11发布到1994年3月1.0正式版发布，这短短不到两年半的时间里，Linux内核经历了爆炸式的增长——代码量从约14,000行膨胀到超过176,000行，外部贡献者从Linus一个人发展到遍布全球的上百名开发者。每一次版本升级都不仅仅是在修bug，而是引入了影响至今的设计决策。</p>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="用 Linux 0.11、0.12、0.95、0.98、0.99 与 1.0 的原始源码校准早期内核演进：区分需求调页与 swap、VFS 骨架与成熟注册表、TCP/IP 源码与默认启用，以及 4GiB 线性空间和 3GiB 用户地址边界。"><title>26 从 Linux 0.11 到 1.0：虚拟内存、VFS 与网络栈如何长成 · Linux 0.11 源码精读</title><link rel="stylesheet" href="../assets/css/site.css"></head><body><a class="skip" href="#content">跳转到正文</a><header class="site-header"><div class="header-inner"><a class="brand" href="../index.html"><b>0x011</b> · Linux Kernel Field Guide</a><nav class="top-nav" aria-label="全站导航"><a href="../index.html#chapters">全部章节</a><a href="../index.html#roadmap">学习路径</a><a href="https://github.com/1998x-stack/linux-kernel-source-tutorial">GitHub</a></nav></div></header><div class="article-layout"><aside class="article-toc"><strong>第 26 章 · 目录</strong><nav aria-label="本章目录"><a href="#question">先校准时间线：哪些变化真的发生在这些版本？</a><a href="#baseline">0.11 并非“没有虚拟内存”：需求调页早已存在</a><a href="#swap">0.12：swap_out 是分配失败时触发的回收路径，不是 swapd 守护进程</a><a href="#vfs">0.95 的 VFS 是早期抽象层，不是今天的完整 VFS</a><a href="#network">0.98 TCP/IP：进入源码树，不等于默认可启动的网络系统</a><a href="#address">4GiB 这个数字：先分清 CPU 线性地址范围与每进程用户空间</a><a href="#one-zero">到 1.0：VMA、vmalloc 与 3GiB 用户边界已经能在源码中定位</a><a href="#summary">把版本号变成可验证的因果链</a><a href="#sources">原始源码与版本公告</a></nav></aside><main id="content" class="article-body"><article><header class="article-header"><span class="eyebrow">CHAPTER 26 / LINUX KERNEL FIELD GUIDE</span><h1>从 Linux 0.11 到 1.0：虚拟内存、VFS 与网络栈如何长成</h1><p class="subtitle">用 Linux 0.11、0.12、0.95、0.98、0.99 与 1.0 的原始源码校准早期内核演进：区分需求调页与 swap、VFS 骨架与成熟注册表、TCP/IP 源码与默认启用，以及 4GiB 线性空间和 3GiB 用户地址边界。</p><span class="pill">源码版本考古 · 纠正 4GiB 误读</span></header><section id="question" aria-labelledby="question-heading"><h2 id="question-heading">先校准时间线：哪些变化真的发生在这些版本？</h2><p>Linux 0.11 到 1.0 不是一条“每个版本新增一个现代子系统”的直线。源码里有三个经常被混为一谈的层次：CPU 已经提供的能力、某个版本真正实现的内核机制，以及某项代码是否进入默认启动镜像或标准发行配置。只有把这三者分开，才能准确理解早期 Linux 的演进。</p><p>本章用原始 tag 源码和版本公告交叉验证。结论先说在前面：0.11 已有可执行文件按需调页；0.12 才把换出/换入到磁盘的 swap 路径做进来；0.95 的 VFS 仍是早期骨架；0.98 的 TCP/IP 已进入源码树但当时并非默认启动镜像的一部分；0.99 已经把用户空间上限写成 3GiB，而不是每个进程独占 4GiB。</p><figure class="figure" tabindex="0" aria-label="可横向滚动的技术图解"><img src="../assets/svg/26-timeline.svg" loading="lazy" alt="Linux 0.11 到 1.0 的版本演进时间线，标注需求分页、磁盘交换、VFS、TCP/IP、NFS 和 3GiB 用户空间" width="960" height="480"><figcaption>版本时间线强调“源码存在”与“默认启用/稳定可用”并非同一件事。</figcaption></figure></section>
+<section id="baseline" aria-labelledby="baseline-heading"><h2 id="baseline-heading">0.11 并非“没有虚拟内存”：需求调页早已存在</h2><p>理解 0.12 的 swap，必须先纠正一个常见误读：Linux 0.11 并不是把每个进程的所有代码和数据一次性完整读入 RAM。v0.11 的 <code>mm/memory.c</code> 已实现 executable demand loading：页故障发生时，内核可以从可执行文件对应区域把页面装入；源码注释还记录了 1991 年 12 月初需求装入和共享页的开发过程。它已经有分页、页故障、共享页和写时复制相关路径。</p><p>真正的差别是：0.11 的内存回收没有 0.12 那套可配置交换设备和 swap bitmap 管理的磁盘换出机制。需求调页回答“尚未驻留的文件页何时装入”；swap 回答“匿名/脏页面在内存紧张时如何暂存到交换设备，并在之后恢复”。两者都是虚拟内存系统的一部分，但不是同一功能。</p><p>可直接阅读 <a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/mm/memory.c" target="_blank" rel="noopener noreferrer">v0.11/mm/memory.c</a> 的页故障路径，再与 <a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.12/mm/memory.c" target="_blank" rel="noopener noreferrer">v0.12/mm/memory.c</a> 文件头的开发记录对照。不要用现代术语“完整的 VM 子系统”去抹平 0.11 的功能边界。</p><figure class="figure" tabindex="0" aria-label="可横向滚动的技术图解"><img src="../assets/svg/26-swap-path.svg" loading="lazy" alt="v0.11 文件后备需求调页与 v0.12 磁盘 swap 的区别：文件页可重读，脏页需要交换空间保存" width="960" height="480"><figcaption>需求调页不等于 swap；swap 解决的是内存回收时的后备存储问题。</figcaption></figure></section>
+<section id="swap" aria-labelledby="swap-heading"><h2 id="swap-heading">0.12：swap_out 是分配失败时触发的回收路径，不是 swapd 守护进程</h2><p>v0.12 的 <code>mm/swap.c</code> 是最可靠的证据。<code>get_free_page()</code> 先扫描 <code>mem_map</code> 寻找空闲页；当扫描失败时，它直接调用 <code>swap_out()</code>，成功释放一页后再重试分配。这个调用关系说明：这里的换出是分配路径内同步触发的回收逻辑，不能把它写成现代意义上的独立 <code>kswapd</code> 守护线程。</p><div class="code-frame"><div class="code-caption">v0.12/mm/swap.c：分配失败后尝试换出</div><pre><code>if (!__res &amp;&amp; swap_out())
+    goto repeat;
+return __res;</code></pre></div><p><code>swap_out()</code> 使用静态游标沿页目录和页表扫描；<code>try_to_swap_out()</code> 检查 PTE 是否 present、页面是否属于可管理的物理内存，以及 <code>mem_map</code> 引用计数是否为 1。若 PTE dirty，分配一个 swap slot，把页表项替换为 swap 编号并写出页面；若页面 clean，则清除 PTE、刷新 TLB 并释放物理页，不必写入交换设备。之后缺页路径根据非 present PTE 中保存的 swap 编号调用 <code>swap_in()</code> 读回页面。</p><div class="code-frame"><div class="code-caption">dirty 与 clean 两条回收分支（摘录结构）</div><pre><code>if (PAGE_DIRTY &amp; page) {
+    swap_nr = get_swap_page();
+    *table_ptr = swap_nr &lt;&lt; 1;
+    invalidate();
+    write_swap_page(swap_nr, (char *)page);
+    free_page(page);
+    return 1;
+}
+*table_ptr = 0;
+invalidate();
+free_page(page);
+return 1;</code></pre></div><p>这不是教科书里常见的“第二次机会算法”实现：代码没有先清访问位再给页面第二次机会的循环；它主要依赖 dirty 位、页引用计数和扫描游标。也不应称它为 LRU：没有维护一个完整的最近使用顺序链表。准确说法是早期、成本很低的页表扫描换出策略。</p><p>v0.12 的 <code>include/linux/sched.h</code> 同时定义了 <code>SWAP_DEV</code> 相关配置与每任务地址范围；版本公告也记录了 <code>mkswap</code> 与 swap 使用说明。源码入口：<a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.12/mm/swap.c" target="_blank" rel="noopener noreferrer">mm/swap.c</a>、<a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.12/mm/memory.c" target="_blank" rel="noopener noreferrer">mm/memory.c</a>、<a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.12/include/linux/sched.h" target="_blank" rel="noopener noreferrer">sched.h</a>。</p><details class="question"><summary>0.12 的 swap_out 是否由一个常驻 swapd 线程定期执行？（展开核对）</summary><p>不是。这里可直接看到 get_free_page() 在分配失败时调用 swap_out()，然后重试。不要把后来的 kswapd 机制倒灌到 0.12。</p></details></section>
+<section id="vfs" aria-labelledby="vfs-heading"><h2 id="vfs-heading">0.95 的 VFS 是早期抽象层，不是今天的完整 VFS</h2><p>0.95 版本公告把 VFS patch 纳入版本，但同时明确提醒：相关例程尚未具备全部功能，更多工作会在下一版继续。这个限定非常重要。它说明 VFS 作为“让上层文件操作不必直接知道具体磁盘格式”的方向已经出现，但不能据此声称 0.95 已拥有今天的完整文件系统注册、挂载、dentry 缓存和多文件系统生态。</p><p>更清晰的证据出现在 v0.99 的 <code>fs/filesystems.c</code>：<code>file_systems[]</code> 注册表根据配置列出 MINIX、EXT、MSDOS、PROC、NFS 和 ISO9660，每项关联对应的 <code>read_super</code> 函数和文件系统名字。此时“同一套 VFS 接口承接多种具体文件系统”已经能从代码中直接看见。注意该数组由编译配置条件控制；出现在源文件里不等于每种文件系统都在某个发行镜像中启用。</p><figure class="figure" tabindex="0" aria-label="可横向滚动的技术图解"><img src="../assets/svg/26-vfs-registry.svg" loading="lazy" alt="v0.95 的 VFS 早期骨架逐步发展为 v0.99 的 file_systems[] 注册表，多个文件系统实现挂到共同的 VFS 入口" width="960" height="480"><figcaption>注册表展示抽象层与具体文件系统实现之间的关系。</figcaption></figure><p>进一步阅读 <a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.95/include/linux/fs.h" target="_blank" rel="noopener noreferrer">v0.95/include/linux/fs.h</a>、<a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.95/fs/super.c" target="_blank" rel="noopener noreferrer">v0.95/fs/super.c</a>，再对照 <a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.99/fs/filesystems.c" target="_blank" rel="noopener noreferrer">v0.99/fs/filesystems.c</a>。你会发现“VFS”不是某个单独的 struct 名称，而是一组跨具体文件系统的对象和调用约定；它在多个版本中逐步变得可用。</p></section>
+<section id="network" aria-labelledby="network-heading"><h2 id="network-heading">0.98 TCP/IP：进入源码树，不等于默认可启动的网络系统</h2><p>v0.98 的源码树已经有 <code>net/socket.c</code>、<code>net/unix.c</code>，以及 <code>net/tcp/</code> 下的 ARP、IP、ICMP、TCP、UDP、Ethernet 和 packet 处理代码。这足以证明网络栈实现已进入内核源码。但 v0.98 版本公告对 TCP/IP 0.8.1 的状态非常谨慎：当时它还没有编进标准 boot image，维护者也明确说自己只观察到它能够编译，尚未完成更深入测试。</p><p>所以不能把“0.98 有 TCP/IP 代码”改写成“0.98 默认开机就有稳定网络服务”。到 0.99 的公告，TCP/IP 被描述为更稳定，NFS client 也进入标准发行内容。这个变化可以从代码树与版本公告共同确认，而不是只看目录里是否存在 <code>tcp.c</code>。</p><figure class="figure" tabindex="0" aria-label="可横向滚动的技术图解"><img src="../assets/svg/26-network-stack.svg" loading="lazy" alt="0.98 的 socket API 与 TCP/IP 协议模块分层；v0.99 在更稳定的网络栈之上加入 NFS 客户端" width="960" height="480"><figcaption>网络栈图区分 socket API、协议处理和文件系统客户端。</figcaption></figure><p>源码入口：<a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.98/net/socket.c" target="_blank" rel="noopener noreferrer">net/socket.c</a>、<a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.98/net/tcp/tcp.c" target="_blank" rel="noopener noreferrer">net/tcp/tcp.c</a>、<a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.98/net/tcp/ip.c" target="_blank" rel="noopener noreferrer">net/tcp/ip.c</a>、<a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.98/net/tcp/udp.c" target="_blank" rel="noopener noreferrer">net/tcp/udp.c</a>；NFS 与多文件系统表见 <a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.99/fs/nfs" target="_blank" rel="noopener noreferrer">v0.99/fs/nfs/</a> 和 <a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.99/fs/filesystems.c" target="_blank" rel="noopener noreferrer">fs/filesystems.c</a>。</p></section>
+<section id="address" aria-labelledby="address-heading"><h2 id="address-heading">4GiB 这个数字：先分清 CPU 线性地址范围与每进程用户空间</h2><p>原有章节把“0.99 4GB 线性空间”写成了每个进程拥有 4GiB 独立空间，这是错误的。最直接的反证就在两个版本的 <code>include/linux/sched.h</code>：</p><ul><li>v0.12：<code>TASK_SIZE = 0x04000000</code>，即 64MiB；<code>NR_TASKS = 64</code>，源码还用编译期检查确保 <code>TASK_SIZE × NR_TASKS = 4GB</code>。这说的是 64 个任务地址槽位的总线性范围，不是一个任务有 4GiB。</li><li>v0.99：注释明确写着“User space process size: 3GB”，并定义 <code>TASK_SIZE = 0xc0000000</code>。这说明用户态上限是 3GiB，32 位地址空间剩余的高 1GiB 留给内核映射。</li></ul><figure class="figure" tabindex="0" aria-label="可横向滚动的技术图解"><img src="../assets/svg/26-address-space.svg" loading="lazy" alt="v0.12 将 4GiB 总线性空间划成 64 个 64MiB 任务槽；v0.99/1.0 的 TASK_SIZE 则把单任务用户空间限制在 3GiB" width="960" height="480"><figcaption>4GiB 是 32 位线性地址的总宽度；不能直接等同于用户可用虚拟内存或物理 RAM。</figcaption></figure><p>这个区别还帮助理解物理内存：32 位 CPU 的线性地址宽度是 4GiB，不代表机器装了 4GiB RAM，也不代表用户进程能把全部 4GiB 当作用户地址。物理 RAM 大小、内核虚拟映射、用户进程地址上限和设备地址窗口是不同维度。</p><p>源码证据：<a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.12/include/linux/sched.h" target="_blank" rel="noopener noreferrer">v0.12/sched.h</a> 中 64MiB/64 任务的宏和检查；<a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.99/include/linux/sched.h" target="_blank" rel="noopener noreferrer">v0.99/sched.h</a> 中 3GiB 的 <code>TASK_SIZE</code>；<a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v1.0/include/linux/sched.h" target="_blank" rel="noopener noreferrer">v1.0/sched.h</a> 保留相同的 3GiB 注释。</p><details class="question"><summary>为什么 v0.12 源码里会出现 TASK_SIZE × NR_TASKS = 4GB？（展开核对）</summary><p>它描述 64 个任务槽位合计覆盖的 32 位线性地址范围。TASK_SIZE 本身只有 64MiB；不能把总槽位范围误读成每个进程的地址空间。</p></details></section>
+<section id="one-zero" aria-labelledby="one-zero-heading"><h2 id="one-zero-heading">到 1.0：VMA、vmalloc 与 3GiB 用户边界已经能在源码中定位</h2><p>v1.0 的 <code>include/linux/mm.h</code> 定义 <code>vm_area_struct</code>，包含 <code>vm_start</code>、<code>vm_end</code>、页面保护、文件 inode、文件偏移和 <code>vm_ops</code> 等字段；注释把 VMA 描述为进程虚拟内存空间中具有特殊缺页处理规则的区域。相同文件还声明 <code>do_mmap()</code>、<code>do_munmap()</code>、<code>remap_page_range()</code> 等接口。</p><p><code>mm/vmalloc.c</code> 则展示内核虚拟地址分配：先按页对齐，维护 <code>vmlist</code>，在 <code>high_memory + VMALLOC_OFFSET</code> 之后找空洞，再为虚拟区间建立映射；<code>vfree()</code> 会解除页面映射并释放描述对象。这已经不是 0.11 里“固定低端映射 + 任务段基址”的简单模型。</p><div class="code-frame"><div class="code-caption">v1.0/include/linux/sched.h 与 mm.h 的关键接口</div><pre><code>#define TASK_SIZE 0xc0000000
 
-        <h2>引言</h2>
-
-        <p>如果说0.11是Linux内核的"胚胎期"，那么从0.12到1.0的这一段演化史就是它的"儿童期"——所有的核心能力都在这个阶段被建立起来。理解这段历史，能让你看清楚：<strong>今天Linux内核中那些你认为理所当然的功能，从来都不是一蹴而就的。它们是在真实需求的推动下，一步步被设计、被实现、被重构出来的。</strong></p>
-
-        <p>本章将沿着0.12 → 0.95 → 0.96 → 0.98 → 0.99 → 1.0的版本主线，逐个分析每一个版本带来哪些影响深远的设计。你会发现，Linux的演化不是线性的渐进——而是一波接一波的"架构跳跃"。</p>
-
-        <h2>0.12——虚拟内存与交换</h2>
-
-        <p>1992年1月，距离0.11发布仅一个月，Linus就发布了0.12。这个版本的发布速度令人瞠目，但它确实带来了影响最深远的机制之一——<strong>交换（swapping）</strong>。</p>
-
-        <p>在0.11中，所有进程的代码和数据在创建时就被完整加载到物理内存中。如果你同时运行6个程序，而物理内存只够装5个——对不起，系统会直接报错。这在只有4MB内存的386 PC上是一个严重的限制。0.12引入了一个交换守护进程（swapd），它会在物理内存不足时将不活跃的页面换出到磁盘上的交换分区，并在需要时再换入。页面换出策略采用了<strong>第二次机会算法</strong>——一种简化的LRU近似实现。虽然从现代角度看这个算法非常简陋，但它奠定了Linux虚拟内存系统的基础。</p>
-
-        <p>除了换页，0.12还添加了几个重要的功能：<strong>符号链接</strong>让Linux文件系统首次支持了"快捷方式"；<strong>伪终端（PTY）</strong>为远程登录（telnet）提供了基础设施；系统调用从0.11的约40个增加到70个。但最重要的也许是——从0.12开始，Linux正式采用<strong>GNU GPL v2</strong>作为许可证。此前Linus使用的是自己写的一份宽松许可，但他意识到GPL能更好地保护开源软件不被私有化。这个决定，怎么说都不为过。</p>
-
-        <div class="highlight">
-            <strong>许可证的历史转折</strong>：Linus在0.12的发布公告中写道："我把许可证变成了GNU GPL，因为我觉得这样更好。另外，我听说RMS在MIT经常谈论GPL的事情——虽然我不完全认同他的一些观点，但GPL确实是一个好的许可证。" 这个务实的选择守护了Linux三十年来的自由。
-        </div>
-
-        <h2>0.95——虚拟文件系统（VFS）</h2>
-
-        <p>0.95发布于1992年3月，距离0.12仅两个月。它的最大成就是<strong>虚拟文件系统（Virtual File System, VFS）</strong>框架的诞生。这个框架的引入，是Linux发展史中最关键的一次架构决策。</p>
-
-        <p>在0.11中，"文件系统"就是MINIX文件系统——没有选择，没有抽象，所有文件操作直接调用MINIX FS的实现函数。随着社区希望Linux能读取MS-DOS的FAT格式磁盘，Linus意识到不能为每一种文件系统都硬编码一套操作路径。他需要的是一个抽象层：<strong>VFS</strong>。</p>
-
-        <p>VFS的核心是一组函数指针结构体。每一种文件系统只要实现了这些回调函数，就能无缝挂载到Linux的目录树中。</p>
-
-        <pre><code>/* Linux 0.95 VFS 核心数据结构（简化） */
-struct file_operations {
-    int (*read)(struct inode *, struct file *, char *, int);
-    int (*write)(struct inode *, struct file *, char *, int);
-    int (*open)(struct inode *, struct file *);
-    void (*release)(struct inode *, struct file *);
+struct vm_area_struct {
+    struct task_struct *vm_task;
+    unsigned long vm_start, vm_end;
+    unsigned short vm_page_prot;
+    struct vm_area_struct *vm_next;
+    struct inode *vm_inode;
+    unsigned long vm_offset;
+    struct vm_operations_struct *vm_ops;
 };
 
-struct inode_operations {
-    int (*create)(struct inode *, const char *, int, int);
-    int (*lookup)(struct inode *, const char *, int, struct inode **);
-    int (*mkdir)(struct inode *, const char *, int);
-    int (*rmdir)(struct inode *, const char *, int);
-};
-
-struct super_operations {
-    int (*read_super)(struct super_block *, void *, int);
-    int (*write_super)(struct super_block *);
-    int (*statfs)(struct super_block *, struct statfs *, int);
-};</code></pre>
-
-        <p>这个设计的精妙之处在于：VFS本身就是"管理文件系统的文件系统"。它不关心底层是MINIX还是FAT——它只关心file_operations、inode_operations、super_operations这三个"合同"。任何遵守合同的文件系统都可以被挂载。这个框架至今没有本质变化——你去读Linux 6.x的<code>include/linux/fs.h</code>，仍然能看到<code>struct file_operations</code>，只不过函数指针多了几十个而已。</p>
-
-        <h2>0.96——ext文件系统与SCSI</h2>
-
-        <p>1992年5月发布的0.96引入了两个重要的子系统。<strong>extfs</strong>（extended filesystem）是ext2的前身，由Rémy Card开发。相比MINIX FS，extfs支持更大的分区（最大2GB vs 64MB）和更长的文件名（255字符 vs 14字符），并首次引入了时间戳。SCSI子系统的加入则让Linux可以连接SCSI硬盘、扫描仪和CD-ROM——这是Linux进入企业市场的第一步。</p>
-
-        <p>到0.96为止，VFS已经支持了三种文件系统类型：</p>
-
-        <table>
-            <thead>
-                <tr><th>文件系统</th><th>最大分区</th><th>最大文件</th><th>文件名长度</th><th>特点</th></tr>
-            </thead>
-            <tbody>
-                <tr><td>MINIX FS</td><td>64 MB</td><td>64 MB</td><td>14 / 30 字符</td><td>设计简单，代码量少，是0.11的默认FS</td></tr>
-                <tr><td>extfs</td><td>2 GB</td><td>2 GB</td><td>255 字符</td><td>支持时间戳，性能更好，ext2的前身</td></tr>
-                <tr><td>FAT (MS-DOS)</td><td>2 GB</td><td>2 GB</td><td>8.3 格式</td><td>兼容DOS双启动，由社区贡献</td></tr>
-            </tbody>
-        </table>
-
-        <p>同时，0.96还加入了UNIX域套接字（UNIX Domain Socket）支持，让同一台机器上的进程可以通过socket通信——这是后来Linux进程间通信（IPC）体系中的重要一环。</p>
-
-        <h2>0.98——TCP/IP网络栈</h2>
-
-        <p>网络支持是Linux走向"联网操作系统"的关键里程碑。0.98（1992年9月）包含了由<strong>Ross Biro</strong>贡献的初始TCP/IP网络栈。这个网络栈的架构清晰分层：</p>
-
-        <pre><code>/* Linux 0.98 网络栈分层结构 */
-+------------------------------+
-| BSD Socket 层 (用户态API)     |  ← socket(), bind(), listen(), accept()
-+------------------------------+
-| INET 层 (协议族实现)          |  ← TCP, UDP, IP, ICMP 协议处理
-+------------------------------+
-| 链路层 (设备驱动)             |  ← NE2000, 3c501 等网卡驱动
-+------------------------------+
-| 物理层                       |  ← 以太网、串行线
-+------------------------------+
-
-/* 在0.98上已经可以运行 telnet 和 ftp */</code></pre>
-
-        <p>虽然0.98的网络栈还很原始——只支持以太网，没有路由表概念，只有最基本的TCP拥塞控制——但它证明了Linux可以成为一个网络操作系统。Linus在发布公告中自豪地写道："使用标准化的telnet/ftp客户端可以正常工作了。下一步是让Linux可以作为NFS客户端。" 事实是，在网络能力加持后，Linux的社区参与度开始指数级增长。</p>
-
-        <div class="warning">
-            <strong>踩坑回忆：网络栈的"黑暗时代"</strong>：Ross Biro贡献的初始网络栈虽然可用，但存在严重的竞态条件（race condition）。在高负载下，TCP连接会随机断开，甚至触发内核panic。Linus在0.99的开发周期中几乎重写了整个网络层。Alan Cox后来接手了网络栈的维护工作，在1.0发布前将其稳定下来。这个故事告诉我们——网络栈的并发安全，从一开始就是内核开发中最棘手的问题之一。
-        </div>
-
-        <h2>0.99——4GB线性空间</h2>
-
-        <p>0.99（1992年12月）是一个被低估的版本，因为它引入了整个Linux进程模型中最重要的设计——<strong>每个进程独立的4GB线性地址空间</strong>。</p>
-
-        <p>在0.11中，所有进程共享同一套页目录表。这意味着一个进程能看到其他进程的内存——虽然通过段保护机制能防止越权访问，但从地址空间布局上看，所有进程都挤在同一块"画布"上画图。这个设计严重限制了进程隔离性和内存管理功能。</p>
-
-        <p>0.99的变革是：<strong>每个进程都拥有自己的页目录（page directory），独立管理自己的4GB线性地址空间</strong>。当你切换进程时，内核会同时切换CR3寄存器中的页目录基址，使CPU立即映射到新进程的地址空间。这个设计——即每个进程独立页表——是现代Linux进程模型的基石。0.99还首次引入了<code>mmap</code>系统调用，让文件可以映射到进程地址空间。</p>
-
-        <p>从0.99开始，Linux的进程模型基本定型：task_struct管理进程元数据，mm_struct管理地址空间，页目录/页表管理虚实映射。这个三分架构一直延续到今天。</p>
-
-        <h2>1.0——正式版发布</h2>
-
-        <p>经过漫长的开发（0.99有大量alpha/beta子版本，从0.99a一直迭代到0.99z），<strong>Linux 1.0正式版于1994年3月14日发布</strong>。这一天的到来比Linus预期晚了整整一年——他原本计划1993年初就发布1.0，但网络栈的稳定性和设备驱动的适配花了远超预期的时间。</p>
-
-        <p>1.0版总共包含约<strong>176,250行代码</strong>。让我们用一张表来直观感受0.11到1.0之间发生了什么：</p>
-
-        <table>
-            <thead>
-                <tr><th>维度</th><th>0.11 (1991.12)</th><th>1.0 (1994.03)</th><th>增长</th></tr>
-            </thead>
-            <tbody>
-                <tr><td>代码行数</td><td>~14,000</td><td>~176,250</td><td>12.6×</td></tr>
-                <tr><td>贡献者数量</td><td>~5 人</td><td>~100+ 人</td><td>20×+</td></tr>
-                <tr><td>支持硬件架构</td><td>i386 only</td><td>i386 + 部分Alpha</td><td>多架构起点</td></tr>
-                <tr><td>文件系统数量</td><td>MINIX FS</td><td>MINIX + ext + FAT + proc</td><td>4种</td></tr>
-                <tr><td>网络支持</td><td>无</td><td>TCP/IP 完整协议栈</td><td>从无到有</td></tr>
-                <tr><td>设备驱动数量</td><td>~5 个</td><td>~50+ 个</td><td>10×</td></tr>
-                <tr><td>最大进程数</td><td>64</td><td>512+</td><td>8×</td></tr>
-                <tr><td>系统调用数</td><td>~40</td><td>~110</td><td>2.75×</td></tr>
-            </tbody>
-        </table>
-
-        <p>有趣的是，1.0发布时的README文件仍然保留着Linus的一贯幽默风格。他在<code>/usr/src/linux/README</code>中写道："Linux是一份免费的操作系统——它不像那些卖几百美元的东西，但也不必期望它什么都能做。" 这个谦虚的描述和今天Linux统治世界的现实形成了强烈的反差。</p>
-
-        <div class="tip">
-            <strong>从1.0到今天</strong>：1.0发布至今已经超过30年。今天的Linux 6.x内核代码超过3,000万行，支持的硬件架构超过30种，文件系统超过50种。但如果你翻开0.12的swap代码和0.95的VFS代码，你会发现——<strong>核心思想没有变</strong>。变得是规模、性能和功能边界，不变的是内核架构最核心的那些设计决策。
-        </div>
-
-        <p>这就是0.11到1.0的演化史——一段从"业余爱好"到"专业操作系统"的旅程。但Linux的脚步从未停歇。从1.0到今天的6.x，内核规模从17万行膨胀到3000万行。下一章，我们将对比0.11与现代内核，看看哪些变了、哪些没变——你会发现，有些东西真的穿越了30年的时光。</p>
-
-        <p><strong>下一章预告：现代内核对比</strong> —— 从内存管理到进程调度，从VFS到eBPF，一探30年间Linux内核的变与不变。</p>
-
-        <div class="footer-nav">
-            <a href="25.html">← 上一章</a>
-            <a href="index.html">📖 返回目录</a>
-            <a href="27.html">下一章 →</a>
-        </div>
-    </div>
-</div>
-</div>
-</body>
-</html>
+extern int do_mmap(...);
+extern int do_munmap(...);
+extern void *vmalloc(unsigned long size);</code></pre></div><p>注意：这些是 v1.0 的历史接口，不应直接复制到现代内核模块。它们的价值在于显示虚拟内存管理已从早期的页表/段管理逐步发展为显式区域对象与映射操作。</p><p>源码：<a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v1.0/include/linux/sched.h" target="_blank" rel="noopener noreferrer">v1.0/sched.h</a>、<a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v1.0/include/linux/mm.h" target="_blank" rel="noopener noreferrer">v1.0/mm.h</a>、<a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v1.0/mm/vmalloc.c" target="_blank" rel="noopener noreferrer">v1.0/vmalloc.c</a>。</p></section>
+<section id="summary" aria-labelledby="summary-heading"><h2 id="summary-heading">把版本号变成可验证的因果链</h2><table><thead><tr><th>版本</th><th>可以确认的变化</th><th>不要误写成</th></tr></thead><tbody><tr><td>0.11</td><td>文件后备需求调页、共享页、分页机制</td><td>完全没有虚拟内存；所有页面都预先读入</td></tr><tr><td>0.12</td><td>可配置 swap 设备、swap bitmap、swap_out/swap_in</td><td>kswapd + 第二次机会 LRU</td></tr><tr><td>0.95</td><td>早期 VFS 抽象进入演进过程</td><td>现代完整 VFS 已全部实现</td></tr><tr><td>0.98</td><td>TCP/IP 源码树已存在，公告仍标注非默认镜像/未充分测试</td><td>默认 boot image 已带稳定网络服务</td></tr><tr><td>0.99</td><td>多文件系统注册表、NFS client、3GiB 用户空间</td><td>每个进程拥有 4GiB 用户空间</td></tr><tr><td>1.0</td><td>VMA、mmap/vmalloc 等接口可直接在源码中追踪</td><td>与现代 Linux VM/VFS 结构完全相同</td></tr></tbody></table><p>1.0 发布公告的重点是稳定化与 bug 修复；它不是突然出现所有现代子系统的“重新发明时刻”。版本号的价值是定位源码证据，不是用来制造一条虚构的线性进化故事。</p></section>
+<section id="sources" aria-labelledby="sources-heading"><h2 id="sources-heading">原始源码与版本公告</h2><ol class="source-list"><li><a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/mm/memory.c" target="_blank" rel="noopener noreferrer">Linux 0.11 mm/memory.c</a>：文件后备需求调页和缺页处理。</li><li><a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.12/mm/swap.c" target="_blank" rel="noopener noreferrer">Linux 0.12 mm/swap.c</a>：swap bitmap、swap_out、swap_in、分配失败回收。</li><li><a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.12/include/linux/sched.h" target="_blank" rel="noopener noreferrer">Linux 0.12 sched.h</a>：64MiB TASK_SIZE、64 个任务槽位、4GiB 总线性范围校验。</li><li><a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.95/include/linux/fs.h" target="_blank" rel="noopener noreferrer">Linux 0.95 fs.h</a> 与 <a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.95/fs/super.c" target="_blank" rel="noopener noreferrer">Linux 0.95 super.c</a>：VFS 早期结构。</li><li><a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.98/net/socket.c" target="_blank" rel="noopener noreferrer">Linux 0.98 socket.c</a> 与 <a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.98/net/tcp/" target="_blank" rel="noopener noreferrer">Linux 0.98 net/tcp/</a>：TCP/IP 源码模块。</li><li><a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.99/fs/filesystems.c" target="_blank" rel="noopener noreferrer">Linux 0.99 filesystems.c</a>：MINIX/EXT/MSDOS/PROC/NFS/ISO9660 注册表。</li><li><a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.99/include/linux/sched.h" target="_blank" rel="noopener noreferrer">Linux 0.99 sched.h</a> 与 <a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v1.0/include/linux/mm.h" target="_blank" rel="noopener noreferrer">Linux 1.0 mm.h</a>：3GiB 用户空间与 VMA。</li><li><a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v1.0/mm/vmalloc.c" target="_blank" rel="noopener noreferrer">Linux 1.0 vmalloc.c</a>：内核虚拟地址区域管理。</li></ol><p>建议阅读顺序：先在 v0.11 找到已经存在的 demand paging，再读 v0.12 swap；然后对比 v0.95 和 v0.99 的文件系统接口，最后把 0.12 与 0.99 的 <code>TASK_SIZE</code> 放在一起算一次。这样能从源码而不是版本传说中理解 0.11 到 1.0。</p></section><nav class="article-pager" aria-label="前后章节"><a href="25.html">← 25 / 前一章</a><a href="27.html">27 / 后一章 →</a></nav></article></main></div><footer class="site-footer"><div class="shell">历史版本限定：Linux 0.11–1.0。版本公告和源代码共同构成证据；不要把后来的现代机制倒灌进早期内核。 <a href="../index.html">课程首页</a></div></footer></body></html>
