@@ -23,11 +23,11 @@
 - 原 02 章“14 个源码目录”的断言没有严格标出层级，且旧稿可能混用现代 `vmlinux` 术语。
 - 原 05 章 `AX=0xE801` 与原始 0.11 源码不符；已以 `AH=0x88` 重写。
 - 原 04 章含复位向量物理地址不严谨的直接算术推导；新文与 BIOS 装载 0x7C00 的事件严格分开。
-- 21–28 目前为迁移保存，不属于这轮事实审计已通过范围。
+- 26–28 目前为迁移保存，不属于这轮事实审计已通过范围。
 
 ## 未来核验任务
 
-逐篇验证 21–28 中实际代码、API、数据结构和边界条件；尤其注意 `mem_init`、系统调用、8259、fork、MINIX 文件系统、TTY、驱动接口和现代内核对比。每次重写要先扩充此账本，再生成插图。
+逐篇验证 26–28 中实际代码、API、数据结构和边界条件；尤其注意 `mem_init`、系统调用、8259、fork、MINIX 文件系统、TTY、驱动接口和现代内核对比。每次重写要先扩充此账本，再生成插图。
 
 ## 第二批 06–10 的逐篇事实审计
 
@@ -66,7 +66,7 @@
 | 15 | [include/linux/fs.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/include/linux/fs.h) | BLOCK_SIZE=1024、NR_HASH=307，buffer_head 不存在旧文所写的 b_req 字段 |
 | 15 | [fs/buffer.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/fs/buffer.c) | hash/free_list 双链、BADNESS(dirt,lock) 选择候选，非严格 LRU；brelse 仅减 b_count，sys_sync/sync_dev 负责写回 |
 
-本轮新增 `assets/svg/11-*.svg` 至 `15-*.svg` 共 10 张原创 SVG。各图只展示对应版本支持的因果路径；图中示例计数/页地址为教学演算而非模拟器测量。更新后的 CI 会对前 20 章做 HTML/链接/SVG XML 与三宽度浏览器验收。仍需在后续对 21–28 逐章交叉复核。
+本轮新增 `assets/svg/11-*.svg` 至 `15-*.svg` 共 10 张原创 SVG。各图只展示对应版本支持的因果路径；图中示例计数/页地址为教学演算而非模拟器测量。更新后的 CI 会对前 25 章做 HTML/链接/SVG XML 与三宽度浏览器验收。仍需在后续对 26–28 逐章交叉复核。
 
 ## 第四批 16–20：MINIX、路径、管道和块 I/O 的源码事实审计
 
@@ -87,4 +87,17 @@
 | 20 | [kernel/system_call.s](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/system_call.s) | hd_interrupt 是汇编 IRQ14 入口，使用 do_hd 指针分派 read_intr/write_intr，不是普通 C 版 do_IRQ |
 | 20 | [kernel/blk_drv/ramdisk.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/blk_drv/ramdisk.c) | rd_init 预留一段内存，do_rd_request 使用 memcpy 和 (sector<<9) 定位；没有运行时 malloc(2MiB) |
 
-本批新增十张 `assets/svg/16-*.svg` 至 `assets/svg/20-*.svg` 原创源码流程图；图中路径、字段和返回分支均可对照上述原版源码，标注的数值例子为教学演算而非运行实验。CI 目标：前 20 章静态结构和 1440/390/360px 浏览器基本交互验收；21–28 保留旧章节，不能据此声称完成源码审计。
+本批新增十张 `assets/svg/16-*.svg` 至 `assets/svg/20-*.svg` 原创源码流程图；图中路径、字段和返回分支均可对照上述原版源码，标注的数值例子为教学演算而非运行实验。CI 目标：前 25 章静态结构和 1440/390/360px 浏览器基本交互验收；26–28 保留旧章节，不能据此声称完成源码审计。
+
+
+## 第五批 21–25：TTY、键盘/串口、内核调试、GDB 与系统调用
+
+| 章节 | v0.11 真实源码 / 外部手册 | 已核对的历史事实 |
+|---|---|---|
+| 21 | [include/linux/tty.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/include/linux/tty.h)；[kernel/chr_drv/tty_io.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/chr_drv/tty_io.c)；[kernel/chr_drv/console.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/chr_drv/console.c) | 三个 tty_table 项；read_q/write_q/secondary 三队列；1024B ring（有效 1023B）；copy_to_cooked 内建规范处理；源码注明 pseudo-tty 未实现；BIOS 选择 B0000/B8000 与 CRTC 端口。 |
+| 22 | [keyboard.S](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/chr_drv/keyboard.S)；[serial.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/chr_drv/serial.c)；[rs_io.s](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/chr_drv/rs_io.s) | IRQ1/0x21；0x60 扫描码与 E0/E1 状态；COM1/COM2 为 0x3F8/0x2F8，IRQ4/IRQ3 向量 0x24/0x23；divisor 48 = 2400 baud、8N1；没有配置 16550A FIFO。 |
+| 23 | [kernel/printk.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/printk.c)；[kernel/traps.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/traps.c)；[mm/page.s](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/mm/page.s)；[Bochs debugger manual](https://bochs.sourceforge.io/doc/docbook/user/internal-debugger.html) | printk 使用静态 buf[1024] 后 tty_write(0)；die 打印异常现场；page.s 读取 CR2 并按 P 位调用 do_no_page/do_wp_page；Bochs --enable-debugger，bpd 是禁用而非删除；0.11 无 Magic SysRq。 |
+| 24 | [Makefile](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/Makefile)；[tools/build.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/tools/build.c)；[boot/head.s](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/boot/head.s)；[QEMU GDB docs](https://www.qemu.org/docs/master/system/gdb.html) | Image 是 bootsect/setup/system 原始镜像；默认 LDFLAGS=-s -x 会剥符号；setup 把 system 从 0x10000 搬至 0；head.s 恒等映射前 16MiB；QEMU -s/-S 连接 gdbstub。 |
+| 25 | [include/unistd.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/include/unistd.h)；[include/linux/sys.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/include/linux/sys.h)；[kernel/sched.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/sched.c)；[kernel/system_call.s](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/system_call.s)；[fs/exec.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/fs/exec.c) | 现有 syscall 编号 0–71、nr_system_calls=72；新增索引 72 要将总数改为 73；sys_call_table 定义于 include/linux/sys.h 并由 sched.c 包含；exec 仅接受 ZMAGIC、N_TXTOFF=1024 的 a.out。 |
+
+本批新增 `assets/svg/21-*.svg` 至 `25-*.svg` 共 10 张原创 SVG。页面均提供源码入口、调用链、版本边界和静态练习；QEMU/旧工具链实验明确区分可复核命令模板与实际执行结果。CI 检查范围更新为前 25 篇，26–28 仍属于待审校章节。

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="470" viewBox="0 0 960 470" role="img" aria-labelledby="svg-title svg-desc"><title id="svg-title">异常现场：先读保存帧，再决定是段错误还是缺页</title><desc id="svg-desc">0.11 将大多数同步异常经 asm.s 保存现场后交给 traps.c；#PF 则由 mm/page.s 读取 CR2 并区分 not-present / write-protect。</desc><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#147f80"/></marker><marker id="warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#b75e3f"/></marker></defs><style>text{font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;fill:#263d40}.title{font-size:23px;font-weight:750}.sub{font-size:14px;fill:#647879}.node{font-size:16px;font-weight:720}.detail{font-size:13px;fill:#566c70}.tiny{font-size:11.5px;fill:#6a7d7f}.line{fill:none;stroke:#147f80;stroke-width:2.5;marker-end:url(#arr)}.warnline{fill:none;stroke:#b75e3f;stroke-width:2.5;marker-end:url(#warn)}.teal{fill:#eef8f5;stroke:#147f80;stroke-width:1.6}.sand{fill:#fff4ed;stroke:#b75e3f;stroke-width:1.6}.slate{fill:#f2f5f6;stroke:#789094;stroke-width:1.4}</style><rect width="960" height="470" rx="16" fill="#fffdfa"/><text x="30" y="43" class="title">异常现场：先读保存帧，再决定是段错误还是缺页</text><text x="30" y="69" class="sub">0.11 将大多数同步异常经 asm.s 保存现场后交给 traps.c；#PF 则由 mm/page.s 读取 CR2 并区分 not-present / write-protect。</text>
+<rect x="35" y="111" width="186" height="83" rx="12" class="teal"/><text x="49" y="138" class="node">CPU exception</text><text x="49" y="160" class="detail">向量 + error code</text>
+<path d="M221 151L257 151" class="line"/>
+<rect x="261" y="111" width="192" height="83" rx="12" class="teal"/><text x="275" y="138" class="node">kernel/asm.s</text><text x="275" y="160" class="detail">保存通用寄存器与段寄存器</text>
+<path d="M453 151L489 151" class="line"/>
+<rect x="493" y="111" width="196" height="83" rx="12" class="teal"/><text x="507" y="138" class="node">trap / page path</text><text x="507" y="160" class="detail">向量 0–16 / #PF 14</text>
+<path d="M689 151L725 151" class="line"/>
+<rect x="729" y="111" width="196" height="83" rx="12" class="teal"/><text x="743" y="138" class="node">现场记录</text><text x="743" y="160" class="detail">EIP、CS、EFLAGS、ESP、PID</text>
+<rect x="36" y="269" width="270" height="89" rx="12" class="teal"/><text x="50" y="296" class="node">段异常：traps.c / die()</text><text x="50" y="318" class="detail">打印段基址、limit、栈和指令字节</text>
+<rect x="345" y="269" width="270" height="89" rx="12" class="teal"/><text x="359" y="296" class="node">缺页：mm/page.s</text><text x="359" y="318" class="detail">读取 CR2 + error_code</text>
+<rect x="654" y="269" width="270" height="89" rx="12" class="teal"/><text x="668" y="296" class="node">memory.c</text><text x="668" y="318" class="detail">P=0 → do_no_page；P=1 → do_wp_page</text>
+<path d="M591 194L174 264" class="warnline"/>
+<path d="M591 194L479 264" class="line"/>
+<path d="M615 314L650 314" class="line"/>
+<text x="37" y="407" class="detail">#GP 不等同于 #PF：前者常与段/权限/描述符检查相关；后者进入分页异常路径。</text>
+<text x="37" y="437" class="tiny">panic() 会 printk 后可选 sys_sync，最终 for(;;) 停住；0.11 没有 Magic SysRq 热键恢复入口。</text></svg>

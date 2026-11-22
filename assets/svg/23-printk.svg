@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="470" viewBox="0 0 960 470" role="img" aria-labelledby="svg-title svg-desc"><title id="svg-title">0.11 printk：格式化缓冲区直达控制台 TTY</title><desc id="svg-desc">这版 printk 不是现代 printk ring buffer：只有一个静态 1024B 格式化缓冲区，然后调用 tty_write(0,…).</desc><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#147f80"/></marker><marker id="warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#b75e3f"/></marker></defs><style>text{font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;fill:#263d40}.title{font-size:23px;font-weight:750}.sub{font-size:14px;fill:#647879}.node{font-size:16px;font-weight:720}.detail{font-size:13px;fill:#566c70}.tiny{font-size:11.5px;fill:#6a7d7f}.line{fill:none;stroke:#147f80;stroke-width:2.5;marker-end:url(#arr)}.warnline{fill:none;stroke:#b75e3f;stroke-width:2.5;marker-end:url(#warn)}.teal{fill:#eef8f5;stroke:#147f80;stroke-width:1.6}.sand{fill:#fff4ed;stroke:#b75e3f;stroke-width:1.6}.slate{fill:#f2f5f6;stroke:#789094;stroke-width:1.4}</style><rect width="960" height="470" rx="16" fill="#fffdfa"/><text x="30" y="43" class="title">0.11 printk：格式化缓冲区直达控制台 TTY</text><text x="30" y="69" class="sub">这版 printk 不是现代 printk ring buffer：只有一个静态 1024B 格式化缓冲区，然后调用 tty_write(0,…).</text>
+<rect x="34" y="122" width="180" height="83" rx="12" class="teal"/><text x="48" y="149" class="node">printk(fmt, …)</text><text x="48" y="171" class="detail">kernel/printk.c</text>
+<path d="M214 163L249 163" class="line"/>
+<rect x="253" y="122" width="183" height="83" rx="12" class="teal"/><text x="267" y="149" class="node">vsprintf()</text><text x="267" y="171" class="detail">static char buf[1024]</text>
+<path d="M436 163L471 163" class="line"/>
+<rect x="475" y="122" width="196" height="83" rx="12" class="teal"/><text x="489" y="149" class="node">FS / DS 切换</text><text x="489" y="171" class="detail">让 tty_write 读到内核 buf</text>
+<path d="M671 163L706 163" class="line"/>
+<rect x="710" y="122" width="218" height="83" rx="12" class="teal"/><text x="724" y="149" class="node">tty_write(0, buf, i)</text><text x="724" y="171" class="detail">固定写入控制台 channel 0</text>
+<path d="M819 205L819 269" class="line"/>
+<rect x="670" y="273" width="258" height="83" rx="12" class="teal"/><text x="684" y="300" class="node">tty_table[0].write_q</text><text x="684" y="322" class="detail">终端输出队列</text>
+<path d="M670 315L634 315" class="line"/>
+<rect x="395" y="273" width="235" height="83" rx="12" class="teal"/><text x="409" y="300" class="node">con_write()</text><text x="409" y="322" class="detail">CSI/VT102 子集与 VRAM</text>
+<path d="M395 315L359 315" class="line"/>
+<rect x="35" y="273" width="320" height="83" rx="12" class="teal"/><text x="49" y="300" class="node">VRAM + CRTC</text><text x="49" y="322" class="detail">0xB8000 或 0xB0000；游标寄存器</text>
+<text x="37" y="407" class="detail">没有 KERN_INFO / KERN_ERR 前缀解析、没有可供 syslog 读取的持久 log_buf 环形日志。</text>
+<text x="37" y="437" class="tiny">printk 的 buf 是一次格式化暂存区，不是历史日志仓库；下一次调用会覆盖它。</text></svg>
