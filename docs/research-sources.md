@@ -87,7 +87,7 @@
 | 20 | [kernel/system_call.s](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/system_call.s) | hd_interrupt 是汇编 IRQ14 入口，使用 do_hd 指针分派 read_intr/write_intr，不是普通 C 版 do_IRQ |
 | 20 | [kernel/blk_drv/ramdisk.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/blk_drv/ramdisk.c) | rd_init 预留一段内存，do_rd_request 使用 memcpy 和 (sector<<9) 定位；没有运行时 malloc(2MiB) |
 
-本批新增十张 `assets/svg/16-*.svg` 至 `assets/svg/20-*.svg` 原创源码流程图；图中路径、字段和返回分支均可对照上述原版源码，标注的数值例子为教学演算而非运行实验。CI 目标：前 25 章静态结构和 1440/390/360px 浏览器基本交互验收；26–28 保留旧章节，不能据此声称完成源码审计。
+本批新增十张 `assets/svg/16-*.svg` 至 `assets/svg/20-*.svg` 原创源码流程图；图中路径、字段和返回分支均可对照上述原版源码，标注的数值例子为教学演算而非运行实验。（当时的第五批状态说明）CI 目标仅覆盖已重构的 01–25；第六批随后完成 26–28 的独立审校，并在下方更新 28 章验收范围。
 
 
 ## 第五批 21–25：TTY、键盘/串口、内核调试、GDB 与系统调用
@@ -100,4 +100,21 @@
 | 24 | [Makefile](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/Makefile)；[tools/build.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/tools/build.c)；[boot/head.s](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/boot/head.s)；[QEMU GDB docs](https://www.qemu.org/docs/master/system/gdb.html) | Image 是 bootsect/setup/system 原始镜像；默认 LDFLAGS=-s -x 会剥符号；setup 把 system 从 0x10000 搬至 0；head.s 恒等映射前 16MiB；QEMU -s/-S 连接 gdbstub。 |
 | 25 | [include/unistd.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/include/unistd.h)；[include/linux/sys.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/include/linux/sys.h)；[kernel/sched.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/sched.c)；[kernel/system_call.s](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/system_call.s)；[fs/exec.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/fs/exec.c) | 现有 syscall 编号 0–71、nr_system_calls=72；新增索引 72 要将总数改为 73；sys_call_table 定义于 include/linux/sys.h 并由 sched.c 包含；exec 仅接受 ZMAGIC、N_TXTOFF=1024 的 a.out。 |
 
-本批新增 `assets/svg/21-*.svg` 至 `25-*.svg` 共 10 张原创 SVG。页面均提供源码入口、调用链、版本边界和静态练习；QEMU/旧工具链实验明确区分可复核命令模板与实际执行结果。CI 检查范围更新为前 25 篇，26–28 仍属于待审校章节。
+第五批提交时的状态快照：本批新增 `assets/svg/21-*.svg` 至 `25-*.svg` 共 10 张原创 SVG。页面均提供源码入口、调用链、版本边界和静态练习；QEMU/旧工具链实验明确区分可复核命令模板与实际执行结果。当时 CI 检查范围更新为前 25 篇，26–28 仍待审校；第六批已在下文完成并将验收范围扩展至 28 篇。
+
+
+## 第六批 26–28：历史版本演进、现代内核对照与 RAM Disk 综合实验
+
+| 章节 | 原始源码 / 官方文档 | 已核对事实与修正 |
+|---|---|---|
+| 26 | [v0.12 mm/memory.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.12/mm/memory.c)；[v0.12 mm/swap.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.12/mm/swap.c) | 源码注释记录 demand-loading 12-01、shared pages 12-02、real disk paging 12-18；get_free_page 在分配失败时调用 swap_out；不是 swapd 守护进程，也不是 CLOCK/second-chance。 |
+| 26 | [v0.95a include/linux/fs.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v0.95a/include/linux/fs.h)；[v0.96c include/linux/fs.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/history/history/+/refs/tags/0.96c/include/linux/fs.h)；[v0.96c fs/super.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v0.96c/fs/super.c) | 0.95a 有 file_operations/inode_operations；0.96c 已 include sys/vfs.h，出现 super_operations/file_system_type、file_systems[] 和 get_fs_type；extfs 在 0.96c 发布说明中仍为 alpha。 |
+| 26 | [v0.98-pl1 README](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v0.98-pl1/README) | TCP/IP 源码存在但未默认编入 normal binary；README 对 SCSI、extfs、dosfs、proc-fs 均保留测试/成熟度警告。 |
+| 26 | [v0.99-pl11 mm/memory.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v0.99-pl11/mm/memory.c)；[v1.0 tag](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v1.0) | 每任务 TSS CR3；页目录 0–767 与 768–1023 分开处理；1.0 发布日期 1994-03-14，主要是相对 pl15 的 bug fixes。 |
+| 27 | [v0.11 mm/memory.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/mm/memory.c)；[Physical Memory](https://docs.kernel.org/mm/physical_memory.html)；[SLUB guide](https://docs.kernel.org/admin-guide/mm/slab.html) | mem_map 是页使用计数，不是位图；现代 buddy 管连续物理页 order，SLUB 在页之上管理对象缓存。上游 v2.6.22 init/Kconfig 默认 SLAB，v2.6.23 默认 SLUB；SLAB 在 6.5 deprecated、6.8 从主线移除。 |
+| 27 | [CFS docs](https://docs.kernel.org/scheduler/sched-design-CFS.html)；[EEVDF docs](https://docs.kernel.org/scheduler/sched-eevdf.html) | O(1) 属于 2.5 开发系列；CFS 于 2.6.23 引入；6.6 开始公平调度类转向 EEVDF。EEVDF 先判断 eligible，再按 virtual deadline 选择，不是实时调度类。 |
+| 27 | [Kbuild modules](https://docs.kernel.org/kbuild/modules.html)；[bounded-loop commit](https://github.com/torvalds/linux/commit/2589726d12a1)；[AF_XDP](https://docs.kernel.org/networking/af_xdp.html) | 现代模块用 Kbuild 和 .ko 生命周期；eBPF 有界循环自 5.3 起支持但仍受 verifier 限制；XDP native/generic/offload 模式依赖不同驱动与设备能力。 |
+| 28 | [v0.11 Makefile](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v0.11/Makefile)；[init/main.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v0.11/init/main.c)；[kernel/blk_drv/Makefile](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v0.11/kernel/blk_drv/Makefile) | RAMDISK 宏按 1KiB blocks 计；ramdisk.o 已构建；init/main.c 在 mem_init 前通过 rd_init 预留 RAM Disk 内存。 |
+| 28 | [ramdisk.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v0.11/kernel/blk_drv/ramdisk.c)；[hd.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v0.11/kernel/blk_drv/hd.c)；[ll_rw_blk.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v0.11/kernel/blk_drv/ll_rw_blk.c) | major 1/minor 1；request sector 为 512B；偏移和长度使用 <<9；rd_load 由 sys_setup 在 mount_root 前调用并可把 ROOT_DEV 改为 0x0101。章节中的减法式边界检查明确标为建议练习，不冒充原版源码。 |
+
+本批新增 9 张独立 SVG 和 3 份逐条 evidence JSON。静态/浏览器验收范围现扩展为 28 篇；真实旧工具链和 QEMU RAM Disk 读写实验仍须单独执行，不能以 CI 页面渲染通过代替。

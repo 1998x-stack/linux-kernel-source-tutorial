@@ -281,34 +281,34 @@
     },
     {
       "num": "26",
-      "title": "从0.11到1.0",
+      "title": "从 0.11 到 1.0：架构演进与版本证据",
       "topics": [
-        "0.12虚拟内存与交换",
-        "0.95 VFS框架",
-        "0.98 TCP/IP网络栈",
-        "0.99 4GB线性空间"
+        "0.12 按需装入与 swap_out 换页",
+        "0.95a 函数表 → 0.96c 文件系统注册",
+        "0.98 TCP/IP 源码存在但默认不编译",
+        "0.99.x 每任务 CR3 与 3GiB/1GiB 映射"
       ],
       "file": "chapters/26.html"
     },
     {
       "num": "27",
-      "title": "现代内核对比",
+      "title": "从 Linux 0.11 到现代内核：机制如何演进",
       "topics": [
-        "Buddy/Slab/SLUB演进",
-        "CFS→EEVDF调度器",
-        "LKM内核模块",
-        "eBPF/XDP可编程"
+        "Buddy 物理页分配与 SLUB 对象缓存",
+        "counter → O(1) → CFS → EEVDF",
+        "静态链接内核与可加载 .ko 模块",
+        "eBPF verifier、有界循环与 XDP"
       ],
       "file": "chapters/27.html"
     },
     {
       "num": "28",
-      "title": "综合项目",
+      "title": "Linux 0.11 RAM Disk：源码追踪与可复现实验",
       "topics": [
-        "实现ramdisk驱动",
-        "简单procfs(备选)",
-        "完整开发流程",
-        "RTFSC开始旅程"
+        "RAMDISK 构建开关与启动期内存预留",
+        "blk_dev[1]、request_fn 与 memcpy",
+        "512B sector、1KiB block、major 1/minor 1",
+        "读写实验、边界检查与 procfs 版本边界"
       ],
       "file": "chapters/28.html"
     }

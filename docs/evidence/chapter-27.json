@@ -1,0 +1,77 @@
+{
+  "chapter": 27,
+  "version_scope": [
+    "Linux v0.11",
+    "Linux 2.5 development series",
+    "Linux 2.6.23",
+    "Linux 5.3",
+    "Linux 6.6 and later"
+  ],
+  "claims": [
+    {
+      "id": "27-memmap",
+      "claim": "The v0.11 memory allocator uses mem_map and get_free_page for page-level allocation; this is not a modern buddy allocator.",
+      "kind": "source",
+      "source_url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/mm/memory.c",
+      "locator": "mem_map; get_free_page",
+      "status": "verified"
+    },
+    {
+      "id": "27-buddy",
+      "claim": "Modern page allocator organizes free memory into zones and buddy free areas; blocks are indexed by order and can split/coalesce.",
+      "kind": "official_documentation",
+      "source_url": "https://docs.kernel.org/mm/physical_memory.html",
+      "locator": "zones; free_area; buddy allocator",
+      "status": "verified"
+    },
+    {
+      "id": "27-slub-default",
+      "claim": "SLUB became the default slab allocator in Linux 2.6.23; slab allocation manages objects on top of physical pages.",
+      "kind": "release_history",
+      "source_url": "https://github.com/torvalds/linux/blob/v2.6.23/init/Kconfig",
+      "locator": "Make SLUB the default allocator commit",
+      "status": "verified",
+      "notes": "Compare upstream v2.6.22 init/Kconfig default SLAB with v2.6.23 default SLUB."
+    },
+    {
+      "id": "27-scheduler",
+      "claim": "The fair scheduler evolved from CFS vruntime ordering toward EEVDF; EEVDF uses eligibility and virtual deadlines and is not the real-time deadline scheduling class.",
+      "kind": "official_documentation",
+      "source_url": "https://docs.kernel.org/scheduler/sched-eevdf.html",
+      "locator": "EEVDF scheduler design",
+      "status": "verified"
+    },
+    {
+      "id": "27-modules",
+      "claim": "Modern external modules use Kbuild; module_init and module_exit define module lifecycle hooks, while module code executes in kernel context.",
+      "kind": "official_documentation",
+      "source_url": "https://docs.kernel.org/kbuild/modules.html",
+      "locator": "external module build and Kbuild",
+      "status": "verified"
+    },
+    {
+      "id": "27-bpf-loops",
+      "claim": "Bounded eBPF loops have been supported since Linux 5.3; verifier complexity and safety checks still constrain programs.",
+      "kind": "technical_documentation",
+      "source_url": "https://docs.ebpf.io/linux/concepts/loops/",
+      "locator": "Bounded loops",
+      "status": "verified"
+    },
+    {
+      "id": "27-xdp",
+      "claim": "XDP native, generic/SKB and hardware-offload paths have different driver/device requirements and expose defined XDP actions.",
+      "kind": "official_documentation",
+      "source_url": "https://docs.kernel.org/networking/af_xdp.html",
+      "locator": "XDP_DRV and XDP_SKB modes",
+      "status": "verified"
+    },
+    {
+      "id": "27-slub-removal",
+      "claim": "SLAB was marked deprecated in v6.5 and removed from mainline in v6.8; current mainline Kconfig retains SLUB as the slab allocator.",
+      "kind": "source_and_release_history",
+      "source_url": "https://github.com/torvalds/linux/blob/v6.8/mm/Kconfig",
+      "locator": "v6.5 mm/Kconfig SLAB_DEPRECATED; v6.8 mm/Kconfig no longer contains CONFIG_SLAB",
+      "status": "verified"
+    }
+  ]
+}

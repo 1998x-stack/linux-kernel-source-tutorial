@@ -23,3 +23,10 @@
 @media(max-width:700px){.figure{overflow-x:auto;overscroll-behavior-inline:contain}.figure::before{content:"⇆ 左右滑动查看图解";display:block;font-size:.74rem;color:var(--muted);padding:.25rem .5rem}.figure img{min-width:760px;width:760px;max-width:none;height:auto}body{font-size:16px}.header-inner{padding:11px 16px}.top-nav{gap:.6rem}.hero{grid-template-columns:1fr;padding:2rem 0;gap:1rem}.shell{padding:0 16px}.metric-row,.pathway{grid-template-columns:1fr;gap:.6rem}.course-grid{grid-template-columns:1fr}.article-layout{padding:1.5rem 16px 3rem}.figure{padding:.35rem}.figure figcaption{padding:.7rem}.article-body section{margin-bottom:3rem}.code-frame pre{font-size:.72rem}.site-header{position:relative}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
 @media print{.site-header,.article-toc,.filters,.site-footer,.article-pager{display:none!important}body{background:white;color:black}.article-layout{display:block;max-width:none;padding:0}.article-body section{break-inside:avoid}.figure,.code-frame{break-inside:avoid;box-shadow:none}a{color:inherit;text-decoration:underline}}
+
+/* Wide technical diagrams remain legible on narrow screens; scroll inside the figure, never the document. */
+.figure-wide .diagram-scroll{max-width:100%;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;border-radius:8px}
+.figure-wide .diagram-scroll:focus-visible{outline:3px solid var(--teal);outline-offset:3px}
+.figure-wide .diagram-scroll img{display:block;width:100%;max-width:100%;height:auto;max-height:none;object-fit:contain}
+.diagram-hint{display:none}
+@media(max-width:900px){.figure-wide .diagram-scroll img{width:760px;max-width:none}.diagram-hint{display:block;color:var(--muted);font-size:.74rem;padding:.25rem .1rem .55rem}}

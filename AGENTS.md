@@ -23,9 +23,9 @@ Maintain a self-contained, Chinese-language Linux 0.11 source-reading course. Ev
 - `index.html`: GitHub Pages homepage (root source). `courses.json`: canonical chapter metadata.
 - `chapters/01.html`–`chapters/28.html`: canonical chapter pages. Root `01.html`–`28.html` are permanent redirect stubs for legacy URLs; never remove them without a link migration plan.
 - `assets/css/site.css`: single design system for the homepage and rewritten lessons. `assets/js/site.js`: only progressively enhanced UI.
-- `chapters/theme.css`: intentionally preserved for legacy 26–28 until individually redesigned.
+- `chapters/theme.css`: retained only for historical compatibility; rewritten chapters 01–28 use `assets/css/site.css`.
 - `assets/svg/*.svg`: standalone, original, accurate diagrams; `docs/research-sources.md`: evidence ledger.
-- Preserve all 28 lessons and do not claim non-rewritten lessons passed a source audit.
+- Preserve all 28 lessons and legacy redirects. All 28 pages now follow the shared article system; source-audit and runtime-test claims must still be supported by the evidence ledger and actual logs.
 
 ## Visual system
 Use warm paper, high-contrast ink, teal for control/data paths, terracotta for hardware/transform operations, violet for alternative state and amber for warnings. Color may supplement, never replace, text labels and visible path direction. Article measure around 820px, sticky TOC on desktop, fluid figures, readable mobile at 360/390px, print and reduced-motion CSS. Use semantic `main > article`, exactly one H1, ordered H2 sections, keyboard-operable `details` / controls, visible `:focus-visible`; no CDN, external fonts, SVG text smaller than legible nominal 13px, scripts inside diagrams, or HTML comments inside CSS.
@@ -48,3 +48,17 @@ Prefer a reviewed topic branch and PR; inspect changes and workflow statuses bef
 - `printk` 只有静态 1024B 格式化缓冲区并调用 `tty_write(0,...)`；不要虚构现代 log ring buffer、syslog 读取路径或 Magic SysRq。
 - 0.11 的 `Image` 是 `tools/build` 拼接的 bootsect/setup/system 原始启动镜像；QEMU 以磁盘/软盘启动，不能假设它是现代 bzImage 并使用 `-kernel`。默认链接 `-s -x` 会剥离符号。
 - 新系统调用要同步 `include/unistd.h` 编号、`include/linux/sys.h` 函数表、C 实现和 `system_call.s` 的 `nr_system_calls`。该版本用户程序由 `fs/exec.c` 按 ZMAGIC a.out 规则装载，不要用现代 ELF 示例替代。
+
+## Historical version constraints (chapters 26–28)
+
+- v0.12 mm/memory.c records demand-loading (1991-12-01), shared pages (12-02), and real disk paging (12-18). get_free_page() calls swap_out() on allocation failure; do not invent a swapd daemon or call the scan a second-chance/CLOCK algorithm.
+- v0.12 page-table helpers explicitly use the global _pg_dir = 0. Do not attribute the later per-task CR3 layout to v0.12.
+- v0.95a include/linux/fs.h has file_operations and inode_operations, but does not yet show the later file_system_type / super_operations registry model. v0.96c adds sys/vfs.h, superblock operations and fs/super.c:file_systems[]; the extfs release note still calls it alpha.
+- v0.98-pl1 README says TCP/IP sources were present but not compiled into the normal binary. SCSI, extfs, dosfs and proc-fs had testing caveats; do not describe them as production-ready or default-enabled.
+- v0.99-pl11 mm/memory.c uses each task's tss.cr3; clear_page_tables() handles entries 0–767 separately from shared high entries 768–1023. Explain 4GiB as the 32-bit linear-address range, not 4GiB of user RAM per process.
+- v1.0 is dated 1994-03-14; its announcement describes the change from 0.99-pl15 as primarily bug fixes, not a sudden subsystem rewrite.
+- In modern comparisons, distinguish buddy page allocation from SLUB object caches. Upstream v2.6.22 init/Kconfig defaults to SLAB; v2.6.23 defaults to SLUB. SLAB was deprecated in 6.5 and removed from mainline in 6.8. CFS was introduced in 2.6.23; Linux 6.6 began the fair-class transition to EEVDF. EEVDF is not the real-time deadline scheduling class.
+- Bounded eBPF loops are supported since Linux 5.3 (upstream commit 2589726d12a1); they must still be proven bounded and pass verifier complexity/safety checks. XDP native, generic/SKB and hardware-offload modes have different driver/device constraints.
+- Linux v0.11 already contains kernel/blk_drv/ramdisk.c; kernel/blk_drv/Makefile includes ramdisk.o. Top-level RAMDISK is measured in 1KiB blocks and init/main.c reserves the region by calling rd_init(main_memory_start, RAMDISK*1024) before mem_init(). There is no kmalloc/GFP_KERNEL path in this driver.
+- The v0.11 RAM Disk uses major 1, minor 1; request sector and nr_sectors are in 512-byte sectors and are converted with << 9. rd_load() is called from hd.c:sys_setup() before mount_root(), and a successful floppy image load sets ROOT_DEV=0x0101.
+- Any subtraction-based range check in chapter 28 is a proposed hardening exercise, not original upstream source. The read/write command sequence is a lab recipe; never claim it passed without an actual v0.11 toolchain + emulator run.
