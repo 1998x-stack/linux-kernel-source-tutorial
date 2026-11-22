@@ -1,7 +1,7 @@
 diff --git a/kernel/blk_drv/ramdisk.c b/kernel/blk_drv/ramdisk.c
 --- a/kernel/blk_drv/ramdisk.c
 +++ b/kernel/blk_drv/ramdisk.c
-@@ -27,25 +27,29 @@
+@@ -27,25 +27,30 @@
  void do_rd_request(void)
  {
  int len;

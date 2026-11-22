@@ -5,7 +5,7 @@ This directory contains two intentionally separate tracks.
 ## Track A — Linux 0.11 RAM Disk
 
 - `ramdisk_range_check.diff`: a historical-source patch for overflow-safe sector range checks in `kernel/blk_drv/ramdisk.c`, plus a NULL-`bh` guard in the common request error log.
-- `ramdisk_selftest.c`: a guest-side read/write round-trip test for block device `/dev/ram1` (major 1, minor 1).
+- `ramdisk_selftest.c`: a guest-side first-block/last-valid-block read-write round-trip and first-out-of-range write test for block device `/dev/ram1` (major 1, minor 1).
 - Enable the historical RAM Disk build option in the v0.11 top-level Makefile: `RAMDISK = -DRAMDISK=512`. The call site reserves `RAMDISK * 1024` bytes before `mem_init()`.
 - Create the device node in the guest root filesystem: `mknod /dev/ram1 b 1 1`.
 - Build the test with a toolchain that emits the a.out ZMAGIC format accepted by the v0.11 `fs/exec.c`. A modern default ELF binary is not a valid substitute.
