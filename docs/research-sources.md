@@ -108,6 +108,9 @@
 | 26 | [mm/memory.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/mm/memory.c), [boot/head.s](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/boot/head.s), [include/linux/fs.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/include/linux/fs.h) | 0.11 无换出、只有 MINIX 文件系统、无网络；内核恒等映射前 16MiB，用户段基址 nr×0x4000000（每进程 64MiB） |
 | 26 | 后续版本 | 仅描述方向（交换、文件系统抽象层、协议栈），不声明具体版本归属；以 kernel.org 历史目录为准 |
 
-**视觉证据**：`assets/svg/21-*.svg` 至 `assets/svg/26-*.svg` 共 12 张原创 SVG，均可独立解析（viewBox + title/desc）。图中数值为教学演算，非模拟器测量；26 的时间线明确标注未逐版本核对。
+| 27 | [mm/memory.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/mm/memory.c), [kernel/sched.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/sched.c) | 0.11 为 mem_map 字节计数与 counter 轮转；现代伙伴/slab、CFS/EEVDF、LKM/eBPF 均标注为“仅对照”，不回填历史 |
+| 28 | [kernel/blk_drv/ramdisk.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/blk_drv/ramdisk.c), [Makefile](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/Makefile) | ramdisk 自 0.11 即存在；do_rd_request 用 `rd_start+(sector<<9)` 与 memcpy；procfs 不在 0.11；构建/启动步骤均标注未执行 |
 
-**质量门禁边界**：`scripts/check_site.py` 与 `scripts/browser_smoke.py` 已改为按 `data-state="reworked"` / `assets/css/site.css` 动态识别已重构章节，因此不再硬编码“前 20 章”。事实复审仍应逐章针对具体寄存器/字段继续开展；21–26 已审，27–28 尚未。
+**视觉证据**：`assets/svg/21-*.svg` 至 `assets/svg/28-*.svg` 共 16 张原创 SVG，均可独立解析（viewBox + title/desc）；图中数值为教学演算，非模拟器测量；现代内核侧内容均在正文与图中显式标为“对照”，未与 0.11 混用。
+
+**质量门禁边界**：`scripts/check_site.py` 与 `scripts/browser_smoke.py` 已改为按 `data-state="reworked"` / `assets/css/site.css` 动态识别已重构章节，因此不再硬编码“前 20 章”。事实复审仍应逐章针对具体寄存器/字段继续开展；21–28 已完成本轮重写与源码锚定，但后续仍应对细节做交叉复核。

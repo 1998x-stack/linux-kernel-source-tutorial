@@ -305,10 +305,10 @@
       "num": "28",
       "title": "综合项目",
       "topics": [
-        "实现ramdisk驱动",
-        "简单procfs(备选)",
-        "完整开发流程",
-        "RTFSC开始旅程"
+        "ramdisk 请求闭环范例",
+        "修改/构建/启动/观察流程",
+        "可验证的小项目建议",
+        "procfs 不在 0.11"
       ],
       "file": "chapters/28.html"
     }
