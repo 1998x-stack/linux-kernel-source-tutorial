@@ -60,7 +60,7 @@ return __res;</code></pre></div>
 </section>
 
 <section id="address-space" aria-labelledby="address-space-heading"><h2 id="address-space-heading">0.99.x：每个任务拥有自己的 CR3</h2>
-<p>32 位线性地址可以表示 \(2^{32}\) 个字节，即 4GiB；这是 x86 地址宽度给出的理论空间，不是“每个进程都能把 4GiB 当作用户内存使用”，更不是机器一定装有 4GiB RAM。</p>
+<p>32 位线性地址可以表示 <code>2^32</code> 个字节，即 4GiB；这是 x86 地址宽度给出的理论空间，不是“每个进程都能把 4GiB 当作用户内存使用”，更不是机器一定装有 4GiB RAM。</p>
 <p>真正值得比较的是页目录的所有权。0.12 的 <code>copy_page_tables(from,to,size)</code> 直接根据线性地址计算全局 <code>_pg_dir = 0</code> 中的目录项。到 0.99-pl11，<code>task_struct</code> 的 TSS 中有 <code>cr3</code>；<code>copy_page_tables()</code> 为新任务分配页目录并复制目录项，<code>free_page_tables()</code> 则按该任务的 <code>tss.cr3</code> 回收。</p>
 <p>0.99-pl11 的 <code>clear_page_tables()</code> 只清理目录项 0–767，并在页目录被共享时复制 768–1023 的高端项。按 1024 个 PDE、每项覆盖 4MiB 计算，目录总覆盖 4GiB；这个版本的代码布局把低端 3GiB 留给进程映射，把高端 1GiB 内核映射作为共享区域。这里的证据指向 <strong>0.99-pl11 这份晚期开发源码</strong>，不要把这个具体布局泛化成 Linux 所有版本、所有架构永远固定的规则。</p>
 <figure class="figure" tabindex="0" aria-label="可横向滚动的页目录图"><img src="../assets/svg/26-address-space.svg" loading="lazy" alt="0.12 通过全局 pg_dir 和线性地址区间管理任务；0.99-pl11 每个 task 的 TSS 保存 CR3，独立页目录的低 768 项对应 3GiB 用户区，高 256 项共享 1GiB 内核映射" width="960" height="480"><figcaption>每个任务拥有自己的页目录并不意味着内核映射也复制一份；0.99-pl11 对高端保留项采取共享策略。</figcaption></figure>

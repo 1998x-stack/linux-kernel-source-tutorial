@@ -31,8 +31,8 @@
 
 <section id="memory" aria-labelledby="memory-heading"><h2 id="memory-heading">物理页分配与小对象分配是两层</h2>
 <p>在 0.11 中，<code>mem_map[]</code> 是按物理页索引的使用计数数组：空闲页标记为 0，分配页的计数递增；<code>get_free_page()</code> 扫描它并返回一个 4KiB 页面。它不是位图，也没有按 2 的幂次管理连续页块。</p>
-<p>现代内核的物理页分配通常由 buddy page allocator 管理。一个 order-\(n\) 块包含 \(2^n\) 个连续物理页；如果请求的块更小，分配器可以拆分更大的空闲块，释放时则尝试与同阶 buddy 合并。实际系统还要考虑 NUMA node、zone 和 per-CPU pageset 等快速路径，不能只用“一个全局空闲链表”来概括。</p>
-<p>小对象又是另一层问题。内核大量分配 <code>task_struct</code>、inode、dentry 等对象，反复直接申请整页会浪费空间和时间。SLAB/SLUB 一类对象缓存分配器在页分配器之上按对象尺寸管理缓存；这个切换可以直接从上游 Kconfig 验证：v2.6.22 的 <code>init/Kconfig</code> 默认选择 <code>SLAB</code>，v2.6.23 改为默认 <code>SLUB</code>。SLUB 并非取代 buddy，而是改变页内对象缓存的组织方式；现代内核配置中仍能看到 SLAB 选项，但当前源码已将其标记为 deprecated（参见 <a href="https://github.com/torvalds/linux/blob/master/init/Kconfig" target="_blank" rel="noopener noreferrer">upstream init/Kconfig</a>）。它们不是 buddy 的替代品：buddy 管物理页块，SLUB 管页内对象。</p>
+<p>现代内核的物理页分配通常由 buddy page allocator 管理。一个 order-\(n\) 块包含 <code>2^n</code> 个连续物理页；如果请求的块更小，分配器可以拆分更大的空闲块，释放时则尝试与同阶 buddy 合并。实际系统还要考虑 NUMA node、zone 和 per-CPU pageset 等快速路径，不能只用“一个全局空闲链表”来概括。</p>
+<p>小对象又是另一层问题。内核大量分配 <code>task_struct</code>、inode、dentry 等对象，反复直接申请整页会浪费空间和时间。SLAB/SLUB 一类对象缓存分配器在页分配器之上按对象尺寸管理缓存；这个切换可以直接从上游 Kconfig 验证：v2.6.22 的 <code>init/Kconfig</code> 默认选择 <code>SLAB</code>，v2.6.23 改为默认 <code>SLUB</code>。SLAB 后来在 Linux 6.5 被标记为 deprecated，并于 6.8 从主线移除；当前主线只保留 SLUB。SLUB 并非取代 buddy，而是改变页内对象缓存的组织方式。它们不是 buddy 的替代品：buddy 管物理页块，SLUB 管页内对象。</p>
 <figure class="figure" tabindex="0" aria-label="可横向滚动的内存分配层次图"><img src="../assets/svg/27-memory-layers.svg" loading="lazy" alt="Linux 0.11 mem_map 与 get_free_page 的逐页扫描，对照现代 zone、per-CPU pageset、buddy order 块和建立在页之上的 SLUB 对象缓存" width="960" height="480"><figcaption>现代内存分配不是“SLUB 替代 buddy”：页分配与对象分配位于不同层次，SLUB 通常从底层页分配器取得 slab 页面。</figcaption></figure>
 <table class="compare"><thead><tr><th>层次</th><th>回答的问题</th><th>典型机制</th></tr></thead><tbody>
 <tr><td>物理页</td><td>从哪个 node/zone 取得连续页？</td><td>Buddy allocator、order、PCP</td></tr>

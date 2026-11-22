@@ -64,6 +64,14 @@
       "source_url": "https://docs.kernel.org/networking/af_xdp.html",
       "locator": "XDP_DRV and XDP_SKB modes",
       "status": "verified"
+    },
+    {
+      "id": "27-slub-removal",
+      "claim": "SLAB was marked deprecated in v6.5 and removed from mainline in v6.8; current mainline Kconfig retains SLUB as the slab allocator.",
+      "kind": "source_and_release_history",
+      "source_url": "https://github.com/torvalds/linux/blob/v6.8/mm/Kconfig",
+      "locator": "v6.5 mm/Kconfig SLAB_DEPRECATED; v6.8 mm/Kconfig no longer contains CONFIG_SLAB",
+      "status": "verified"
     }
   ]
 }

@@ -23,7 +23,7 @@ Reviewed chapters 26–28 against versioned Linux source tags and current kernel
 ### Chapter 27 — modern subsystem corrections
 
 - Clarified that mem_map[] in 0.11 is a page-use counter array, not a bitmap.
-- Explained buddy physical-page allocation and SLUB object caches as different layers. Verified the default change from SLAB in upstream v2.6.22 init/Kconfig to SLUB in v2.6.23.
+- Explained buddy physical-page allocation and SLUB object caches as different layers. Verified the default change from SLAB in upstream v2.6.22 init/Kconfig to SLUB in v2.6.23; SLAB was deprecated in 6.5 and removed from mainline in 6.8.
 - Reframed CFS as the historical vruntime/RB-tree design and EEVDF as the Linux 6.6 fair-class transition; EEVDF is not the real-time deadline scheduling class.
 - Corrected eBPF loop restrictions: bounded loops have been supported since Linux 5.3, but must still pass verifier safety and complexity checks.
 - Distinguished XDP native, generic/SKB and hardware-offload paths and their driver/device prerequisites.
