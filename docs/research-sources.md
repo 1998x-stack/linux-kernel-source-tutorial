@@ -100,4 +100,46 @@
 | 24 | [Makefile](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/Makefile)；[tools/build.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/tools/build.c)；[boot/head.s](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/boot/head.s)；[QEMU GDB docs](https://www.qemu.org/docs/master/system/gdb.html) | Image 是 bootsect/setup/system 原始镜像；默认 LDFLAGS=-s -x 会剥符号；setup 把 system 从 0x10000 搬至 0；head.s 恒等映射前 16MiB；QEMU -s/-S 连接 gdbstub。 |
 | 25 | [include/unistd.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/include/unistd.h)；[include/linux/sys.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/include/linux/sys.h)；[kernel/sched.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/sched.c)；[kernel/system_call.s](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/system_call.s)；[fs/exec.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/fs/exec.c) | 现有 syscall 编号 0–71、nr_system_calls=72；新增索引 72 要将总数改为 73；sys_call_table 定义于 include/linux/sys.h 并由 sched.c 包含；exec 仅接受 ZMAGIC、N_TXTOFF=1024 的 a.out。 |
 
-本批新增 `assets/svg/21-*.svg` 至 `25-*.svg` 共 10 张原创 SVG。页面均提供源码入口、调用链、版本边界和静态练习；QEMU/旧工具链实验明确区分可复核命令模板与实际执行结果。CI 检查范围更新为前 25 篇，26–28 仍属于待审校章节。
+本批新增 `assets/svg/21-*.svg` 至 `25-*.svg` 共 10 张原创 SVG。页面均提供源码入口、调用链、版本边界和静态练习；QEMU/旧工具链实验明确区分可复核命令模板与实际执行结果。CI 检查范围更新为前 25 篇，26–28 已完成源码审校与独立实验设计。
+
+
+## 第六批 26–28：版本演进、现代内核机制与 RAM Disk 综合项目
+
+### 26 · Linux 0.11 → 1.0：历史演进证据
+
+| Claim | 精确证据 | 核对结论 |
+|---|---|---|
+| C26-01 | [v0.11 mm/memory.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/mm/memory.c) | v0.11 已有 executable-backed demand loading；不能说它完全没有虚拟内存或所有页都预先读入。 |
+| C26-02 | [v0.12 mm/swap.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.12/mm/swap.c) | get_free_page 在扫描失败时调用 swap_out；try_to_swap_out 区分 dirty 写入 swap 与 clean 清 PTE 后释放；没有常驻 swapd/第二次机会 LRU 代码。 |
+| C26-03 | [v0.12 include/linux/sched.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.12/include/linux/sched.h) | TASK_SIZE=0x04000000（64MiB），NR_TASKS=64，源码用编译期检查校验总槽位 4GiB。 |
+| C26-04 | [v0.95 README/release note](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.95/README)；[v0.95 fs/super.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.95/fs/super.c) | VFS 在 0.95 处于早期集成阶段，不能等同现代完整 VFS。 |
+| C26-05 | [v0.99 fs/filesystems.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.99/fs/filesystems.c) | 可见 MINIX、EXT、MSDOS、PROC、NFS、ISO9660 的配置条件注册表。 |
+| C26-06 | [v0.98 README/release note](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.98/README)；[v0.98 net/tcp/](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.98/net/tcp/) | TCP/IP 代码进入源码树；版本公告仍注明尚未进入标准 boot image、测试尚不充分。 |
+| C26-07 | [v0.99 fs/nfs/](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.99/fs/nfs/)；[v0.99 fs/filesystems.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.99/fs/filesystems.c) | NFS 客户端作为文件系统实现进入 0.99 源码注册表。 |
+| C26-08 | [v0.99 include/linux/sched.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.99/include/linux/sched.h)；[v1.0 include/linux/sched.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v1.0/include/linux/sched.h) | TASK_SIZE=0xc0000000，即 3GiB 用户空间；不是每进程 4GiB。 |
+| C26-09 | [v1.0 include/linux/mm.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v1.0/include/linux/mm.h)；[v1.0 mm/vmalloc.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v1.0/mm/vmalloc.c) | VMA、mmap/munmap 与 vmalloc 虚拟区管理可在 1.0 源码中直接定位。 |
+
+### 27 · 现代机制：官方内核文档
+
+| Claim | 资料 | 核对结论 |
+|---|---|---|
+| C27-01 | [Physical Memory](https://docs.kernel.org/mm/physical_memory.html) | 现代物理页管理按 node/zone 组织，buddy 管理不同 order 的空闲页块。 |
+| C27-02 | [SLUB/slab guide](https://docs.kernel.org/admin-guide/mm/slab.html) | 对象 cache 的调试包括 red-zone、poison、tracking 和 slabinfo；debug 有性能/内存成本。 |
+| C27-03 | [CFS design](https://docs.kernel.org/scheduler/sched-design-CFS.html) | CFS 于 2.6.23 合入，使用 vruntime 与时间排序红黑树。 |
+| C27-04 | [EEVDF](https://docs.kernel.org/scheduler/sched-eevdf.html) | Linux 6.6 起逐步转向 EEVDF；先判 eligible/lag，再选择最早虚拟截止期。 |
+| C27-05 | [Driver Basics](https://docs.kernel.org/driver-api/basics.html)；[Kbuild external modules](https://docs.kernel.org/kbuild/modules.html) | module_init/module_exit 以及外部模块构建语义。 |
+| C27-06 | [eBPF verifier](https://docs.kernel.org/bpf/verifier.html)；[BPF maps](https://docs.kernel.org/bpf/maps.html) | verifier 追踪寄存器/指针/栈状态；maps 为用户态和 BPF 程序共享状态。 |
+| C27-07 | [AF_XDP](https://docs.kernel.org/networking/af_xdp.html) | UMEM/rings/queue binding；copy/zero-copy 由模式和驱动能力决定。 |
+| C27-08 | [XDP RX Metadata](https://docs.kernel.org/networking/xdp-rx-metadata.html) | XDP frame metadata、PASS 转换 skb、redirect 与 AF_XDP 的交接约定。 |
+
+### 28 · RAM Disk 综合项目：历史源码与实验层级
+
+| Claim | 精确证据 | 核对结论 |
+|---|---|---|
+| C28-01 | [v0.11 kernel/blk_drv/ramdisk.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/blk_drv/ramdisk.c) | 原版已有 do_rd_request、rd_init、rd_load；major 1，检查 minor 1；sector 以 512B 为单位；rd_load 从 block 256 查找 rootfs。 |
+| C28-02 | [v0.11 init/main.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/init/main.c)；[v0.11 Makefile](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/Makefile) | RAMDISK 编译选项在 mem_init 前调用 rd_init(main_memory_start, RAMDISK*1024)，预留内存，不是运行时 kmalloc。 |
+| C28-03 | [v0.11 kernel/blk_drv/blk.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/blk_drv/blk.h) | request 的 bh 可为 NULL（paging request）；buffer 是请求数据指针；end_request 失败日志原始路径需额外保护 NULL bh。 |
+| C28-04 | [v0.11 kernel/blk_drv/hd.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/blk_drv/hd.c) | sys_setup() 调用 rd_load() 后 mount_root()；成功加载时 root device 切换为 0x0101。 |
+| C28-05 | [Kbuild external modules](https://docs.kernel.org/kbuild/modules.html) | 现代 procfs module 的外部构建需匹配运行内核 build tree。 |
+
+本批新增 12 张 SVG（26–28 各 4 张），新增 `docs/evidence/26.json`、`27.json`、`28.json`，新增 `labs/28/` 历史补丁、guest 自测、现代 procfs module 与 host 边界参考测试。静态/浏览器 CI 覆盖全部 28 篇；CI 的 Python 边界模型测试不宣称已编译/启动 Linux 0.11。

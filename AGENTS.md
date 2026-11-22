@@ -23,9 +23,9 @@ Maintain a self-contained, Chinese-language Linux 0.11 source-reading course. Ev
 - `index.html`: GitHub Pages homepage (root source). `courses.json`: canonical chapter metadata.
 - `chapters/01.html`–`chapters/28.html`: canonical chapter pages. Root `01.html`–`28.html` are permanent redirect stubs for legacy URLs; never remove them without a link migration plan.
 - `assets/css/site.css`: single design system for the homepage and rewritten lessons. `assets/js/site.js`: only progressively enhanced UI.
-- `chapters/theme.css`: intentionally preserved for legacy 26–28 until individually redesigned.
+- `chapters/theme.css`: archived legacy stylesheet retained for compatibility; all 28 canonical chapter pages now use `assets/css/site.css`.
 - `assets/svg/*.svg`: standalone, original, accurate diagrams; `docs/research-sources.md`: evidence ledger.
-- Preserve all 28 lessons and do not claim non-rewritten lessons passed a source audit.
+- Preserve all 28 lessons. All 28 canonical HTML pages have been redesigned; source-audit claims must still be backed by `docs/evidence/` and the exact historical tag.
 
 ## Visual system
 Use warm paper, high-contrast ink, teal for control/data paths, terracotta for hardware/transform operations, violet for alternative state and amber for warnings. Color may supplement, never replace, text labels and visible path direction. Article measure around 820px, sticky TOC on desktop, fluid figures, readable mobile at 360/390px, print and reduced-motion CSS. Use semantic `main > article`, exactly one H1, ordered H2 sections, keyboard-operable `details` / controls, visible `:focus-visible`; no CDN, external fonts, SVG text smaller than legible nominal 13px, scripts inside diagrams, or HTML comments inside CSS.
@@ -41,10 +41,24 @@ Use warm paper, high-contrast ink, teal for control/data paths, terracotta for h
 Prefer a reviewed topic branch and PR; inspect changes and workflow statuses before merging. GitHub Pages root must continue to expose the root `index.html` unless repository Pages settings are separately changed and verified. Avoid breaking historical deep links and keep the repo navigable even with JavaScript disabled.
 
 
-## Linux 0.11 历史版本约束（第 21–25 章）
+## Linux 0.11 历史版本约束（第 21–28 章）
 
 - TTY 只按 v0.11 的 `tty_table[0..2]`、三个 `tty_queue` 和 `copy_to_cooked()` 解释；源码明确指出 pseudo-TTY 尚未实现，不得写入现代 PTY / 可插拔 `tty_ldisc` 结构。
 - 串口默认 2400 baud、8N1；`serial.c` 未启用 16550A FIFO。区分 IIR 读偏移与 FCR 写偏移，保留 IRQ3/IRQ4 和向量 0x23/0x24 的实际映射。
 - `printk` 只有静态 1024B 格式化缓冲区并调用 `tty_write(0,...)`；不要虚构现代 log ring buffer、syslog 读取路径或 Magic SysRq。
 - 0.11 的 `Image` 是 `tools/build` 拼接的 bootsect/setup/system 原始启动镜像；QEMU 以磁盘/软盘启动，不能假设它是现代 bzImage 并使用 `-kernel`。默认链接 `-s -x` 会剥离符号。
 - 新系统调用要同步 `include/unistd.h` 编号、`include/linux/sys.h` 函数表、C 实现和 `system_call.s` 的 `nr_system_calls`。该版本用户程序由 `fs/exec.c` 按 ZMAGIC a.out 规则装载，不要用现代 ELF 示例替代。
+
+
+## Final chapters 26–28: cross-version and lab boundaries
+
+- Chapter 26 must distinguish v0.11 executable-backed demand paging from v0.12 disk swap. In v0.12, `get_free_page()` calls `swap_out()` on allocation failure; do not invent a resident `swapd` daemon or second-chance LRU algorithm.
+- Treat v0.95 VFS as an early/incomplete integration stage. Use v0.99 `fs/filesystems.c` as evidence for the MINIX/EXT/MSDOS/PROC/NFS/ISO9660 registry. A source file in the tree does not prove that a feature was enabled in a standard boot image.
+- v0.98 TCP/IP source-tree presence is not equivalent to a tested default boot image. Compare the release note with v0.99 network/NFS maturity.
+- Address-space claims must quote the exact tag: v0.12 `TASK_SIZE=0x04000000` (64MiB per task) and `NR_TASKS=64`; v0.99/v1.0 `TASK_SIZE=0xc0000000` (3GiB user space). Do not say each process had 4GiB of user memory.
+- Chapter 27 must separate physical-page allocation (Buddy) from object caching (SLAB/SLUB), and distinguish 0.11 counter scheduling, CFS vruntime, and EEVDF eligibility/deadline. EEVDF transition began in Linux 6.6; do not say all CFS code vanished at once.
+- eBPF examples must check packet bounds and respect verifier/program-type/helper constraints. Bounded loops have been supported since Linux 5.3; do not claim that every loop is rejected. AF_XDP zero-copy is conditional on driver support and bind mode.
+- Chapter 28's historical track is based on existing v0.11 `kernel/blk_drv/ramdisk.c`. RAMDISK memory is reserved by `rd_init()` before `mem_init()`; block device is major 1/minor 1 (`/dev/ram1)); sectors are 512 bytes; `rd_load()` may switch root to `0x0101`. Do not transplant modern `kmalloc/GFP_KERNEL/gendisk` APIs into this code.
+- v0.11 request fields are `sector`, `nr_sectors`, `buffer`, and `bh`; paging requests may have `bh == NULL`. Any failure-path edit to `end_request()` must handle that case before reading `b_blocknr`.
+- The optional `proc_ops` exercise is modern Linux only. Keep it separate from the v0.11 guest lab. Host arithmetic tests, guest block I/O tests, modern module tests, browser QA and kernel-image boot are different evidence levels.
+- Keep one `docs/evidence/NN.json` per cross-version chapter. Each claim must identify the exact tag/doc URL and a symbol, section or version note; never invent line numbers or runtime output.

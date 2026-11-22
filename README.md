@@ -6,8 +6,8 @@
 
 ## 目前内容
 
-- **01–25：已深度重构**。01–05：历史、源码结构、实验与启动；06–10：内核初始化、x86、IDT/IRQ、系统调用和调度；11–15：进程、信号、物理内存、分页、缓冲区；16–20：MINIX 文件系统、路径解析、管道/exec、块请求队列、CHS 硬盘与 RAM 磁盘；21–25：TTY/VGA、键盘/UART、printk/Bochs、QEMU/GDB、sys_hello 系统调用。前二十五章均含独立 SVG、源码锚点、离线演算与自检。
-- **26–28：原内容迁移保留**。路径已统一，内容尚未按新设计全面审计；其中一些历史实现与现代术语仍需复核，不能视作已完成的技术验收。
+- **01–28：已深度重构**。01–05：历史、源码结构、实验与启动；06–10：内核初始化、x86、IDT/IRQ、系统调用和调度；11–15：进程、信号、物理内存、分页、缓冲区；16–20：MINIX 文件系统、路径解析、管道/exec、块请求队列、CHS 硬盘与 RAM 磁盘；21–25：TTY/VGA、键盘/UART、printk/Bochs、QEMU/GDB、sys_hello 系统调用；26–28：早期内核演进、现代内核机制对照、RAM Disk 工程项目。全部章节均有独立图解、源码锚点、边界说明与自检。
+- 第 26–28 章额外提供逐条证据清单、实验源文件与验收分层；历史工具链/QEMU 集成测试与现代模块测试均明确区分，不会把静态 CI 误报为内核实测。
 - 首页提供课程路径、完整目录、搜索与筛选；无须外部 JS 库。
 
 ## 目录结构
@@ -18,15 +18,18 @@
 ├── 01.html ... 28.html          # 旧深链兼容跳转
 ├── courses.json                 # 章节列表与链接的元数据
 ├── chapters/
-│   ├── 01.html ... 25.html      # 已重构文章
-│   ├── 26.html ... 28.html      # 原章节（待二次审校）
+│   ├── 01.html ... 28.html      # 已重构文章
+│   ├── （全部 28 篇均已重构）
 │   ├── index.html               # 兼容旧章节对首页的相对路径
 │   └── theme.css                # 原章节样式（已修复错误注释）
 ├── assets/
 │   ├── css/site.css             # 首页 + 新文章共同的设计系统
 │   ├── js/site.js               # 可选交互：检索/筛选
 │   └── svg/                     # 原创、可独立打开的 SVG
-├── docs/research-sources.md     # 前二十五章的源码证据表
+├── docs/research-sources.md     # 全部章节的源码证据表
+├── docs/evidence/               # 第 26–28 章逐条 claim-source ledger
+├── labs/28/                     # RAM Disk patch、guest test、现代 procfs module
+├── tests/                       # 标准库单元测试（边界算术参考模型）
 ├── scripts/check_site.py        # 无第三方依赖的静态检查
 ├── scripts/browser_smoke.py     # 可选 Playwright 浏览器检查
 ├── .github/workflows/validate.yml
@@ -59,4 +62,4 @@ python3 scripts/browser_smoke.py http://127.0.0.1:8000
 
 0.11 原版的 `boot/bootsect.s`、`boot/setup.s`、`boot/head.s` 与 `Image` 构建目标均已在新文章中按源码核查。可编译环境与可启动镜像要分开验证；仓库不附带历史根文件系统磁盘镜像，不承诺现代工具链一键重建。
 
-贡献前请阅读 [AGENTS.md](AGENTS.md)，每章要满足独立可读、版本界限、因果图、原始证据和验收五项要求。视觉叙事的方法参考 [Olah-style-posts](https://github.com/1998x-stack/Olah-style-posts)，图解与正文均为此仓库专门编写。
+贡献前请阅读 [AGENTS.md](AGENTS.md)，每章要满足独立可读、版本界限、因果图、原始证据和验收五项要求。第 28 章实验分别标注 host model、0.11 guest 和现代 module 的验证边界。视觉叙事的方法参考 [Olah-style-posts](https://github.com/1998x-stack/Olah-style-posts)，图解与正文均为此仓库专门编写。

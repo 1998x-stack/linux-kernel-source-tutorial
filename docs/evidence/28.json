@@ -1,0 +1,80 @@
+{
+  "chapter": 28,
+  "title": "Linux 0.11 RAM Disk capstone",
+  "baseline": "The historical driver track targets Linux v0.11. The proc_ops module is a separate modern-kernel exercise. Host tests validate a reference arithmetic model only.",
+  "claims": [
+    {
+      "id": "C28-01",
+      "claim": "v0.11 already implements do_rd_request, rd_init and rd_load in kernel/blk_drv/ramdisk.c; the device is major 1 and accepts minor 1.",
+      "source": {
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/blk_drv/ramdisk.c",
+        "symbols": [
+          "do_rd_request",
+          "rd_init",
+          "rd_load",
+          "MAJOR_NR=1",
+          "MINOR==1"
+        ]
+      },
+      "status": "verified"
+    },
+    {
+      "id": "C28-02",
+      "claim": "The RAM Disk reserves RAM before mem_init through rd_init(main_memory_start, RAMDISK*1024).",
+      "source": {
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/init/main.c",
+        "symbol": "RAMDISK conditional before mem_init"
+      },
+      "status": "verified"
+    },
+    {
+      "id": "C28-03",
+      "claim": "v0.11 request fields include sector, nr_sectors, buffer and bh; paging requests may have bh == NULL.",
+      "source": {
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/blk_drv/blk.h",
+        "symbols": [
+          "struct request",
+          "paging request comment",
+          "end_request"
+        ]
+      },
+      "status": "verified"
+    },
+    {
+      "id": "C28-04",
+      "claim": "rd_load starts at floppy block 256, validates the MINIX superblock and changes ROOT_DEV to 0x0101 on success.",
+      "source": {
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/blk_drv/ramdisk.c",
+        "symbol": "rd_load"
+      },
+      "status": "verified"
+    },
+    {
+      "id": "C28-05",
+      "claim": "sys_setup calls rd_load before mount_root.",
+      "source": {
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/blk_drv/hd.c",
+        "symbol": "sys_setup"
+      },
+      "status": "verified"
+    },
+    {
+      "id": "C28-06",
+      "claim": "The RAMDISK Makefile option is passed into compilation; init/main.c multiplies it by 1024 bytes.",
+      "source": {
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/Makefile",
+        "symbol": "RAMDISK variable"
+      },
+      "status": "verified"
+    },
+    {
+      "id": "C28-07",
+      "claim": "Modern external procfs module builds should use Kbuild and the configured target kernel build tree.",
+      "source": {
+        "url": "https://docs.kernel.org/kbuild/modules.html",
+        "symbol": "external module build instructions"
+      },
+      "status": "verified"
+    }
+  ]
+}

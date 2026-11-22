@@ -18,6 +18,8 @@ jobs:
           python-version: "3.12"
       - name: Validate file graph and SVG XML
         run: python scripts/check_site.py
+      - name: Run host-side reference tests
+        run: python -m unittest discover -s tests -v
   browser:
     runs-on: ubuntu-latest
     timeout-minutes: 20

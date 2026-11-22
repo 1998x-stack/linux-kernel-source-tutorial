@@ -1,0 +1,118 @@
+{
+  "chapter": 26,
+  "title": "Linux 0.11 to 1.0 source evolution",
+  "baseline": "Historical source tags v0.11, v0.12, v0.95, v0.98, v0.99 and v1.0. Claims distinguish code presence from default enablement and release maturity.",
+  "claims": [
+    {
+      "id": "C26-01",
+      "claim": "Linux 0.11 already implements executable-backed demand loading; it is inaccurate to say all process pages are eagerly loaded.",
+      "source": {
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/mm/memory.c",
+        "symbol": "do_no_page / memory.c header comments"
+      },
+      "status": "verified"
+    },
+    {
+      "id": "C26-02",
+      "claim": "Linux 0.12 get_free_page invokes swap_out after allocation scanning fails; try_to_swap_out writes dirty pages to swap and discards clean pages; this source does not implement a resident swapd daemon or second-chance LRU.",
+      "source": {
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.12/mm/swap.c",
+        "symbols": [
+          "get_free_page",
+          "swap_out",
+          "try_to_swap_out",
+          "swap_in"
+        ]
+      },
+      "status": "verified"
+    },
+    {
+      "id": "C26-03",
+      "claim": "v0.12 TASK_SIZE is 64MiB and NR_TASKS is 64; the source compile-time check validates aggregate 4GiB task slots, not 4GiB per process.",
+      "source": {
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.12/include/linux/sched.h",
+        "symbols": [
+          "TASK_SIZE",
+          "NR_TASKS",
+          "TASK_SIZE*NR_TASKS check"
+        ]
+      },
+      "status": "verified"
+    },
+    {
+      "id": "C26-04",
+      "claim": "v0.95 is an early VFS integration stage; the release note explicitly limits claims about completeness.",
+      "source": {
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.95/README",
+        "symbol": "release notes / VFS status"
+      },
+      "status": "verified"
+    },
+    {
+      "id": "C26-05",
+      "claim": "v0.99 fs/filesystems.c registers MINIX, EXT, MSDOS, PROC, NFS and ISO9660 conditionally.",
+      "source": {
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.99/fs/filesystems.c",
+        "symbol": "file_systems[]"
+      },
+      "status": "verified"
+    },
+    {
+      "id": "C26-06",
+      "claim": "v0.98 contains TCP/IP source files, but its release note says TCP/IP was not in the standard boot image and had not yet been fully tested.",
+      "source": {
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.98/README",
+        "symbols": [
+          "TCP/IP 0.8.1 release note",
+          "boot image status"
+        ]
+      },
+      "status": "verified"
+    },
+    {
+      "id": "C26-07",
+      "claim": "v0.99 source includes NFS filesystem implementation and registration.",
+      "source": {
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.99/fs/filesystems.c",
+        "symbol": "CONFIG_NFS_FS / nfs_read_super"
+      },
+      "status": "verified"
+    },
+    {
+      "id": "C26-08",
+      "claim": "v0.99 and v1.0 define TASK_SIZE as 0xc0000000, with an explicit 3GiB user-space comment.",
+      "source": {
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.99/include/linux/sched.h",
+        "symbol": "TASK_SIZE"
+      },
+      "status": "verified"
+    },
+    {
+      "id": "C26-09",
+      "claim": "v1.0 defines vm_area_struct and VMA operations and exposes mmap/munmap/vmalloc interfaces.",
+      "source": {
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v1.0/include/linux/mm.h",
+        "symbols": [
+          "vm_area_struct",
+          "vm_operations_struct",
+          "do_mmap",
+          "vmalloc"
+        ]
+      },
+      "status": "verified"
+    },
+    {
+      "id": "C26-10",
+      "claim": "v1.0 vmalloc manages virtual ranges beginning after high_memory plus VMALLOC_OFFSET and tracks them in vmlist.",
+      "source": {
+        "url": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v1.0/mm/vmalloc.c",
+        "symbols": [
+          "vmalloc",
+          "vfree",
+          "vmlist"
+        ]
+      },
+      "status": "verified"
+    }
+  ]
+}

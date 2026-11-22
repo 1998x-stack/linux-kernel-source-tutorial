@@ -1,0 +1,104 @@
+{
+  "chapter": 27,
+  "title": "Modern Linux mechanisms",
+  "baseline": "Linux 0.11 historical comparison plus current Linux kernel documentation. Modern implementation details are not presented as 0.11 APIs.",
+  "claims": [
+    {
+      "id": "C27-01",
+      "claim": "Modern physical memory is organized by nodes and zones; the buddy allocator manages free page blocks by order.",
+      "source": {
+        "url": "https://docs.kernel.org/mm/physical_memory.html",
+        "symbol": "nodes, zones, free_area and buddy allocator"
+      },
+      "status": "verified"
+    },
+    {
+      "id": "C27-02",
+      "claim": "SLUB/slab object cache debugging supports red zoning, poisoning, user tracking and slabinfo; enabling debugging has overhead.",
+      "source": {
+        "url": "https://docs.kernel.org/admin-guide/mm/slab.html",
+        "symbol": "slab_debug options and slabinfo"
+      },
+      "status": "verified"
+    },
+    {
+      "id": "C27-03",
+      "claim": "CFS was merged in Linux 2.6.23 and tracks weighted virtual runtime using a time-ordered red-black tree.",
+      "source": {
+        "url": "https://docs.kernel.org/scheduler/sched-design-CFS.html",
+        "symbol": "overview / vruntime / rbtree"
+      },
+      "status": "verified"
+    },
+    {
+      "id": "C27-04",
+      "claim": "Linux began transitioning to EEVDF in 6.6; selection first considers eligibility/lag, then earliest virtual deadline.",
+      "source": {
+        "url": "https://docs.kernel.org/scheduler/sched-eevdf.html",
+        "symbol": "overview and eligible task selection"
+      },
+      "status": "verified"
+    },
+    {
+      "id": "C27-05",
+      "claim": "module_init/module_exit distinguish built-in initcalls and module insertion/removal; modules execute in kernel context.",
+      "source": {
+        "url": "https://docs.kernel.org/driver-api/basics.html",
+        "symbol": "module_init / module_exit"
+      },
+      "status": "verified"
+    },
+    {
+      "id": "C27-06",
+      "claim": "External modules should be built through Kbuild against the configured target kernel build tree.",
+      "source": {
+        "url": "https://docs.kernel.org/kbuild/modules.html",
+        "symbol": "How to Build External Modules"
+      },
+      "status": "verified"
+    },
+    {
+      "id": "C27-07",
+      "claim": "The eBPF verifier tracks register and pointer states and checks memory bounds/alignment and helper arguments.",
+      "source": {
+        "url": "https://docs.kernel.org/bpf/verifier.html",
+        "symbol": "verifier state tracking and pointer bounds"
+      },
+      "status": "verified"
+    },
+    {
+      "id": "C27-08",
+      "claim": "BPF maps provide typed shared storage accessible to BPF programs and user space.",
+      "source": {
+        "url": "https://docs.kernel.org/bpf/maps.html",
+        "symbol": "overview and bpf syscall"
+      },
+      "status": "verified"
+    },
+    {
+      "id": "C27-09",
+      "claim": "AF_XDP uses UMEM and FILL/COMPLETION/RX/TX rings; XDP_ZEROCOPY requests zero-copy and fails if unavailable.",
+      "source": {
+        "url": "https://docs.kernel.org/networking/af_xdp.html",
+        "symbols": [
+          "UMEM and rings",
+          "XDP_COPY and XDP_ZEROCOPY bind flags"
+        ]
+      },
+      "status": "verified"
+    },
+    {
+      "id": "C27-10",
+      "claim": "XDP metadata and PASS/redirect paths have driver-specific semantics; the XDP path is not a replacement for the whole TCP/IP stack.",
+      "source": {
+        "url": "https://docs.kernel.org/networking/xdp-rx-metadata.html",
+        "symbols": [
+          "XDP_PASS",
+          "bpf_redirect_map",
+          "supported devices"
+        ]
+      },
+      "status": "verified"
+    }
+  ]
+}

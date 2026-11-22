@@ -283,10 +283,10 @@
       "num": "26",
       "title": "从0.11到1.0",
       "topics": [
-        "0.12虚拟内存与交换",
-        "0.95 VFS框架",
-        "0.98 TCP/IP网络栈",
-        "0.99 4GB线性空间"
+        "0.11 已有需求调页；0.12 swap_out / swap_in",
+        "0.95 VFS 骨架 → 0.99 多文件系统注册表",
+        "0.98 TCP/IP 代码与 0.99 NFS 的成熟边界",
+        "0.12 64MiB/任务 vs 0.99 3GiB 用户空间"
       ],
       "file": "chapters/26.html"
     },
@@ -294,10 +294,10 @@
       "num": "27",
       "title": "现代内核对比",
       "topics": [
-        "Buddy/Slab/SLUB演进",
-        "CFS→EEVDF调度器",
-        "LKM内核模块",
-        "eBPF/XDP可编程"
+        "mem_map → Buddy 页面分配 → SLUB 对象缓存",
+        "counter → CFS vruntime → EEVDF deadline",
+        "LKM 生命周期与 Kbuild 外部模块",
+        "eBPF verifier、maps、XDP 与 AF_XDP"
       ],
       "file": "chapters/27.html"
     },
@@ -305,10 +305,10 @@
       "num": "28",
       "title": "综合项目",
       "topics": [
-        "实现ramdisk驱动",
-        "简单procfs(备选)",
-        "完整开发流程",
-        "RTFSC开始旅程"
+        "审计 v0.11 原生 ramdisk.c 与 rd_load",
+        "扇区范围硬化、NULL bh 错误日志与读写自测",
+        "现代 proc_ops 模块迁移实验（可选）",
+        "host / guest / module 三层验收"
       ],
       "file": "chapters/28.html"
     }

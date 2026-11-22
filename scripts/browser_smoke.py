@@ -23,10 +23,10 @@ def main():
             assert page.locator('.course-card:visible').count()>=1
             page.locator('#lesson-search').fill('')
             page.get_by_role('button',name='已重构').click()
-            assert page.locator('.course-card:visible').count()==25
+            assert page.locator('.course-card:visible').count()==28
             page.get_by_role('button',name='全部').click()
             assert page.locator('.course-card:visible').count()==28
-            for n in range(1,26):
+            for n in range(1,29):
                 path=f'{n:02d}.html'
                 page.goto(URL+'/chapters/'+path, wait_until='networkidle')
                 assert page.locator('h1').count()==1,f'{path} H1'
@@ -45,11 +45,11 @@ def main():
                         timeout=10000
                     )
                     assert img.evaluate('(el)=>el.naturalWidth>0'),f'{path} image broken: {img.get_attribute("src")}'
-                if n in (6,8,10,11,13,15,16,18,20,21,22,23,24,25):
+                if n in (6,8,10,11,13,15,16,18,20,21,22,23,24,25,26,27,28):
                     page.screenshot(path=str(reports/f'chapter-{n:02d}-{width}.png'),full_page=True)
             page.close()
         browser.close()
     assert not errors,f'JavaScript errors: {errors}'
-    print('PASS browser smoke: 1440/390/360; 28 cards; 25 chapters; filtering, details, images, overflow')
+    print('PASS browser smoke: 1440/390/360; 28 cards; 28 chapters; filtering, details, images, overflow')
 if __name__=='__main__':
     main()
