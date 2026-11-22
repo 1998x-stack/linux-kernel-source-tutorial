@@ -91,6 +91,8 @@ def main():
             bad(f"{path}: requires at least five self-contained sections")
         if not parsed.images:
             bad(f"{path}: visual explanation missing")
+        if i >= 26 and "diagram-scroll" not in data:
+            bad(f"{path}: mobile diagram must use an inner horizontal scroll region")
         if parsed.details < 1:
             bad(f"{path}: missing native interactive self-check")
         if "../assets/css/site.css" not in data:

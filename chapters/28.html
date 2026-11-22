@@ -49,13 +49,13 @@ RAMDISK = -DRAMDISK=512</code></pre></div>
 main_memory_start += rd_init(main_memory_start, RAMDISK*1024);
 #endif
 mem_init(main_memory_start, memory_end);</code></pre></div>
-<figure class="figure" tabindex="0" aria-label="可横向滚动的启动预留图"><img src="../assets/svg/28-ramdisk-init.svg" loading="lazy" alt="Makefile 传入 RAMDISK 宏，init/main.c 计算 main_memory_start，rd_init 设置 rd_start/rd_length 并清零保留区，然后 mem_init 从保留区之后管理普通内存" width="960" height="480"><figcaption>返回值是被 RAM Disk 占用的字节数；main_memory_start 因此向后移动，避免普通页分配器再次分配这段内存。</figcaption></figure>
+<figure class="figure figure-wide" aria-label="可横向滚动的启动预留图"><div class="diagram-scroll" tabindex="0" role="region" aria-label="横向滚动查看图解"><span class="diagram-hint">左右滑动查看完整图解</span><img src="../assets/svg/28-ramdisk-init.svg" loading="lazy" alt="Makefile 传入 RAMDISK 宏，init/main.c 计算 main_memory_start，rd_init 设置 rd_start/rd_length 并清零保留区，然后 mem_init 从保留区之后管理普通内存" width="960" height="480"></div><figcaption>返回值是被 RAM Disk 占用的字节数；main_memory_start 因此向后移动，避免普通页分配器再次分配这段内存。</figcaption></figure>
 </section>
 
 <section id="request" aria-labelledby="request-heading"><h2 id="request-heading">块请求如何变成 memcpy</h2>
 <p>文件系统通过 <code>ll_rw_block()</code> 请求块 I/O。<code>ll_rw_blk.c</code> 按主设备号找到 <code>blk_dev[major]</code>，将 <code>struct request</code> 放入该设备的请求链表；如果队列原来为空，就调用设备的 <code>request_fn()</code>。RAM Disk 没有硬件中断或磁盘控制器寄存器，它的 request handler 直接把内存区域当作磁盘。</p>
 <p><code>do_rd_request()</code> 首先展开 <code>INIT_REQUEST</code>，取出当前请求。请求的 <code>sector</code> 和 <code>nr_sectors</code> 都以 512 字节扇区为单位，所以内存偏移是 <code>sector &lt;&lt; 9</code>，传输字节数是 <code>nr_sectors &lt;&lt; 9</code>。写请求把请求缓冲区复制到 RAM Disk；读请求则反向复制。完成后调用 <code>end_request(1)</code> 解锁 buffer、唤醒等待者并推进请求队列。</p>
-<figure class="figure" tabindex="0" aria-label="可横向滚动的请求处理图"><img src="../assets/svg/28-ramdisk-request.svg" loading="lazy" alt="ll_rw_block 构造 request 并进入 blk_dev[1] 队列，request_fn 调用 do_rd_request，按 sector 乘 512 计算内存地址，执行 memcpy，end_request 完成请求" width="960" height="480"><figcaption>RAM Disk 复用块设备 request 队列接口，但完成 I/O 的方式是 CPU memcpy，而不是向 IDE/SCSI 控制器提交硬件命令。</figcaption></figure>
+<figure class="figure figure-wide" aria-label="可横向滚动的请求处理图"><div class="diagram-scroll" tabindex="0" role="region" aria-label="横向滚动查看图解"><span class="diagram-hint">左右滑动查看完整图解</span><img src="../assets/svg/28-ramdisk-request.svg" loading="lazy" alt="ll_rw_block 构造 request 并进入 blk_dev[1] 队列，request_fn 调用 do_rd_request，按 sector 乘 512 计算内存地址，执行 memcpy，end_request 完成请求" width="960" height="480"></div><figcaption>RAM Disk 复用块设备 request 队列接口，但完成 I/O 的方式是 CPU memcpy，而不是向 IDE/SCSI 控制器提交硬件命令。</figcaption></figure>
 <div class="code-frame"><div class="code-caption">Linux v0.11 · ramdisk.c（原版核心逻辑，保留关键字段）</div><pre><code>addr = rd_start + (CURRENT-&gt;sector &lt;&lt; 9);
 len  = CURRENT-&gt;nr_sectors &lt;&lt; 9;
 
@@ -77,7 +77,7 @@ end_request(1);</code></pre></div>
 <p>原版 <code>ramdisk.c</code> 设置 <code>#define MAJOR_NR 1</code>，并在请求处理时拒绝 minor number 不等于 1 的请求。设备节点因此应使用 major 1、minor 1，例如 <code>/dev/ram</code> 对应的 <code>mknod /dev/ram b 1 1</code>；把它写成 minor 0 的 <code>/dev/ram0</code>，会被这份驱动的条件检查拒绝。</p>
 <p>这里有两个容易混淆的块大小：文件系统 <code>BLOCK_SIZE</code> 是 1024 字节，而底层 request 使用 512 字节扇区。<code>ll_rw_block()</code> 为一个 1KiB buffer block 设置 <code>sector = b_blocknr &lt;&lt; 1</code>、<code>nr_sectors = 2</code>；RAM Disk 驱动再通过左移 9 位换算成字节偏移和长度。</p>
 <p><code>rd_load()</code> 是另一条启动路径：硬盘初始化代码 <code>sys_setup()</code> 在 <code>mount_root()</code> 之前调用它。若当前根设备是软盘（major 2），它会从软盘第 256 个 1KiB block 附近检查 MINIX superblock，确认镜像大小不超过 RAM Disk 容量后逐块复制；成功后把 <code>ROOT_DEV</code> 改成 <code>0x0101</code>（major 1、minor 1）。因此它是“从软盘预载根文件系统到 RAM Disk”的路径，不是 <code>rd_init()</code> 本身负责挂载文件系统。</p>
-<figure class="figure" tabindex="0" aria-label="可横向滚动的扇区单位图"><img src="../assets/svg/28-sector-units.svg" loading="lazy" alt="一个 1KiB 文件系统 block 对应两个 512B request sector；sector 左移 9 位换算字节偏移，nr_sectors 左移 9 位换算字节长度，设备 minor 必须为 1" width="960" height="480"><figcaption>所有偏移计算必须使用 request 的 512B sector 单位；不能把 block number、sector number 和 byte offset 混用。</figcaption></figure>
+<figure class="figure figure-wide" aria-label="可横向滚动的扇区单位图"><div class="diagram-scroll" tabindex="0" role="region" aria-label="横向滚动查看图解"><span class="diagram-hint">左右滑动查看完整图解</span><img src="../assets/svg/28-sector-units.svg" loading="lazy" alt="一个 1KiB 文件系统 block 对应两个 512B request sector；sector 左移 9 位换算字节偏移，nr_sectors 左移 9 位换算字节长度，设备 minor 必须为 1" width="960" height="480"></div><figcaption>所有偏移计算必须使用 request 的 512B sector 单位；不能把 block number、sector number 和 byte offset 混用。</figcaption></figure>
 </section>
 
 <section id="lab" aria-labelledby="lab-heading"><h2 id="lab-heading">可复现实验：读写同一段 RAM Disk</h2>

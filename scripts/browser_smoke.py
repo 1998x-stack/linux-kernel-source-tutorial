@@ -65,6 +65,16 @@ def main():
                     f"{chapter}: document overflow at {width}"
                 )
                 verify_images(page, chapter)
+                if number >= 26 and width <= 900:
+                    scroll_region = page.locator(".diagram-scroll").first
+                    assert scroll_region.count() == 1, f"{chapter}: missing diagram scroll region"
+                    assert scroll_region.evaluate("(el) => el.scrollWidth > el.clientWidth"), (
+                        f"{chapter}: diagram labels were scaled down instead of horizontally scrollable"
+                    )
+                    scroll_region.evaluate("(el) => { el.scrollLeft = 80; }")
+                    assert scroll_region.evaluate("(el) => el.scrollLeft > 0"), (
+                        f"{chapter}: diagram cannot be horizontally scrolled"
+                    )
                 if number in (21, 22, 23, 24, 25, 26, 27, 28):
                     page.screenshot(
                         path=str(reports / f"chapter-{number:02d}-{width}.png"),

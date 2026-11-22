@@ -44,6 +44,7 @@ Reviewed chapters 26–28 against versioned Linux source tags and current kernel
 - Chapter 26: 3 SVGs (version map, v0.12 swap flow, v0.99 address-space map).
 - Chapter 27: 3 SVGs (memory allocation layers, scheduler evolution, eBPF/XDP path).
 - Chapter 28: 3 SVGs (boot-time reservation, request path, block/sector units).
+- Added focusable inner horizontal-scroll regions for the 9 dense diagrams; at 360px/390px the diagrams retain a readable 760px drawing width instead of shrinking all labels. Browser checks verify inner scroll works while the document itself has no horizontal overflow.
 - Added docs/evidence/chapter-26.json through chapter-28.json.
 - Updated courses metadata, homepage statuses, README, AGENTS.md and the research-source ledger.
 - Updated static and Playwright checks to include all 28 pages and all chapter SVGs.

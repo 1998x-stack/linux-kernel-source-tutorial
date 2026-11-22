@@ -33,7 +33,7 @@
 <p>在 0.11 中，<code>mem_map[]</code> 是按物理页索引的使用计数数组：空闲页标记为 0，分配页的计数递增；<code>get_free_page()</code> 扫描它并返回一个 4KiB 页面。它不是位图，也没有按 2 的幂次管理连续页块。</p>
 <p>现代内核的物理页分配通常由 buddy page allocator 管理。一个 order-n 块包含 <code>2^n</code> 个连续物理页；如果请求的块更小，分配器可以拆分更大的空闲块，释放时则尝试与同阶 buddy 合并。实际系统还要考虑 NUMA node、zone 和 per-CPU pageset 等快速路径，不能只用“一个全局空闲链表”来概括。</p>
 <p>小对象又是另一层问题。内核大量分配 <code>task_struct</code>、inode、dentry 等对象，反复直接申请整页会浪费空间和时间。SLAB/SLUB 一类对象缓存分配器在页分配器之上按对象尺寸管理缓存；这个切换可以直接从上游 Kconfig 验证：v2.6.22 的 <code>init/Kconfig</code> 默认选择 <code>SLAB</code>，v2.6.23 改为默认 <code>SLUB</code>。SLAB 后来在 Linux 6.5 被标记为 deprecated，并于 6.8 从主线移除；当前主线只保留 SLUB。SLUB 并非取代 buddy，而是改变页内对象缓存的组织方式。它们不是 buddy 的替代品：buddy 管物理页块，SLUB 管页内对象。</p>
-<figure class="figure" tabindex="0" aria-label="可横向滚动的内存分配层次图"><img src="../assets/svg/27-memory-layers.svg" loading="lazy" alt="Linux 0.11 mem_map 与 get_free_page 的逐页扫描，对照现代 zone、per-CPU pageset、buddy order 块和建立在页之上的 SLUB 对象缓存" width="960" height="480"><figcaption>现代内存分配不是“SLUB 替代 buddy”：页分配与对象分配位于不同层次，SLUB 通常从底层页分配器取得 slab 页面。</figcaption></figure>
+<figure class="figure figure-wide" aria-label="可横向滚动的内存分配层次图"><div class="diagram-scroll" tabindex="0" role="region" aria-label="横向滚动查看图解"><span class="diagram-hint">左右滑动查看完整图解</span><img src="../assets/svg/27-memory-layers.svg" loading="lazy" alt="Linux 0.11 mem_map 与 get_free_page 的逐页扫描，对照现代 zone、per-CPU pageset、buddy order 块和建立在页之上的 SLUB 对象缓存" width="960" height="480"></div><figcaption>现代内存分配不是“SLUB 替代 buddy”：页分配与对象分配位于不同层次，SLUB 通常从底层页分配器取得 slab 页面。</figcaption></figure>
 <table class="compare"><thead><tr><th>层次</th><th>回答的问题</th><th>典型机制</th></tr></thead><tbody>
 <tr><td>物理页</td><td>从哪个 node/zone 取得连续页？</td><td>Buddy allocator、order、PCP</td></tr>
 <tr><td>内核对象</td><td>如何快速重复分配同尺寸对象？</td><td>SLUB cache、kmem_cache、kmalloc cache</td></tr>
@@ -45,7 +45,7 @@
 <p>0.11 的 <code>schedule()</code> 遍历任务数组，寻找处于 <code>TASK_RUNNING</code> 且 <code>counter</code> 最大的任务；如果没有正的时间片，就按 <code>counter = counter / 2 + priority</code> 重算。任务选择需要扫描任务槽，因此其成本随任务数增长。</p>
 <p>Linux 2.5 开发周期引入 O(1) 调度器，以每 CPU 的 active/expired 优先级数组和位图选择可运行任务，避免每次从头扫描全部任务。Linux 2.6.23 引入 CFS：用红黑树组织调度实体，以 <code>vruntime</code> 近似“已经获得的加权 CPU 时间”，从最左侧的实体开始选择。</p>
 <p>从 Linux 6.6 开始，公平调度类逐步转向 EEVDF（Earliest Eligible Virtual Deadline First）。它先判断任务是否 eligible（其 lag 表明没有超出应得的 CPU 份额），再在 eligible 实体中选择虚拟 deadline 最早者；请求的 slice 影响虚拟 deadline。EEVDF 仍然是公平调度机制，不是实时调度类里的 deadline scheduler，也不能描述成“专门为实时任务设计”。</p>
-<figure class="figure" tabindex="0" aria-label="可横向滚动的调度器演进图"><img src="../assets/svg/27-scheduler.svg" loading="lazy" alt="Linux 0.11 counter 线性扫描，2.5 O(1) active/expired 位图，2.6.23 CFS vruntime 红黑树，6.6 起 EEVDF eligible 与虚拟 deadline" width="960" height="480"><figcaption>调度器演进改变了“谁先运行”的排序模型和数据结构；公平性目标持续存在，但 EEVDF 的 eligible 与 virtual deadline 不能简化成普通绝对截止时间。</figcaption></figure>
+<figure class="figure figure-wide" aria-label="可横向滚动的调度器演进图"><div class="diagram-scroll" tabindex="0" role="region" aria-label="横向滚动查看图解"><span class="diagram-hint">左右滑动查看完整图解</span><img src="../assets/svg/27-scheduler.svg" loading="lazy" alt="Linux 0.11 counter 线性扫描，2.5 O(1) active/expired 位图，2.6.23 CFS vruntime 红黑树，6.6 起 EEVDF eligible 与虚拟 deadline" width="960" height="480"></div><figcaption>调度器演进改变了“谁先运行”的排序模型和数据结构；公平性目标持续存在，但 EEVDF 的 eligible 与 virtual deadline 不能简化成普通绝对截止时间。</figcaption></figure>
 <div class="note"><p><strong>关键区分：</strong>CFS 的 <code>vruntime</code> 是虚拟运行时间；EEVDF 的 virtual deadline 是在虚拟时间轴上结合 slice 计算的排序键。二者都不等于 wall-clock 绝对时间。</p></div>
 </section>
 
@@ -63,7 +63,7 @@ make -C /lib/modules/$(uname -r)/build M=$PWD</code></pre></div>
 <p>0.98 的 TCP/IP 是一份需要显式启用的早期网络实现；现代 Linux 则允许受约束的程序挂接到多个明确定义的内核扩展点。eBPF 程序类型决定可见的上下文、可调用 helper 和允许的 attach point；并不是“任意 C 代码可以插到内核任意位置”。</p>
 <p>验证器会追踪寄存器类型与取值范围、指针来源、栈初始化状态和内存访问边界，拒绝无法证明安全的访问。早期版本要求循环展开；从 Linux 5.3 起，验证器支持能够证明终止条件的有界循环，但循环迭代次数和状态复杂度仍会影响程序是否能通过验证。</p>
 <p>XDP 则是网络接收路径上的一种早期处理入口。原生 driver mode 可在驱动构造完整 <code>sk_buff</code> 之前运行；generic/SKB mode 则在通用网络栈路径中运行，兼容性更广但路径不同；硬件 offload 需要设备/驱动明确支持，不能默认假定存在。程序可以返回 <code>XDP_PASS</code>、<code>XDP_DROP</code>、<code>XDP_TX</code>、<code>XDP_REDIRECT</code> 等动作。</p>
-<figure class="figure" tabindex="0" aria-label="可横向滚动的 eBPF 和 XDP 路径图"><img src="../assets/svg/27-xdp-path.svg" loading="lazy" alt="网卡接收数据进入 XDP native 或 generic/SKB 路径，eBPF verifier 在加载前检查类型、边界和循环，程序返回 PASS、DROP、TX 或 REDIRECT" width="960" height="480"><figcaption>XDP 不是绕过所有硬件和内核约束的“万能高速开关”；具体执行点、动作能力和 offload 都取决于驱动与设备支持。</figcaption></figure>
+<figure class="figure figure-wide" aria-label="可横向滚动的 eBPF 和 XDP 路径图"><div class="diagram-scroll" tabindex="0" role="region" aria-label="横向滚动查看图解"><span class="diagram-hint">左右滑动查看完整图解</span><img src="../assets/svg/27-xdp-path.svg" loading="lazy" alt="网卡接收数据进入 XDP native 或 generic/SKB 路径，eBPF verifier 在加载前检查类型、边界和循环，程序返回 PASS、DROP、TX 或 REDIRECT" width="960" height="480"></div><figcaption>XDP 不是绕过所有硬件和内核约束的“万能高速开关”；具体执行点、动作能力和 offload 都取决于驱动与设备支持。</figcaption></figure>
 </section>
 
 <section id="mapping" aria-labelledby="mapping-heading"><h2 id="mapping-heading">跨版本概念对照</h2>

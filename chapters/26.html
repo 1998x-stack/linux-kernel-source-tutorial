@@ -27,7 +27,7 @@
 
 <section id="timeline" aria-labelledby="timeline-heading"><h2 id="timeline-heading">先把版本和证据放回时间轴</h2>
 <p>版本号不是一张可以随意填充功能的清单。早期 Linux 的开发速度很快，同一功能可能先进入开发树、再经过 patchlevel、最后才成为稳定发布的一部分。因此，本章将“某个 tag 中已经能找到代码”“发布说明声称已包含”和“功能已经适合真实使用”分开记录。</p>
-<figure class="figure" tabindex="0" aria-label="可横向滚动的版本演进图"><img src="../assets/svg/26-version-map.svg" loading="lazy" alt="Linux 0.11 到 1.0 的版本时间线，标出 0.12 换页、0.96c 文件系统注册和 alpha extfs、0.98 可选网络栈、0.99.x 独立页目录与 1.0 稳定发布" width="960" height="480"><figcaption>时间线只标记能由对应 tag 源码或发布公告支持的里程碑；“代码存在”不等于“默认启用”或“已经成熟”。</figcaption></figure>
+<figure class="figure figure-wide" aria-label="可横向滚动的版本演进图"><div class="diagram-scroll" tabindex="0" role="region" aria-label="横向滚动查看图解"><span class="diagram-hint">左右滑动查看完整图解</span><img src="../assets/svg/26-version-map.svg" loading="lazy" alt="Linux 0.11 到 1.0 的版本时间线，标出 0.12 换页、0.96c 文件系统注册和 alpha extfs、0.98 可选网络栈、0.99.x 独立页目录与 1.0 稳定发布" width="960" height="480"></div><figcaption>时间线只标记能由对应 tag 源码或发布公告支持的里程碑；“代码存在”不等于“默认启用”或“已经成熟”。</figcaption></figure>
 <p>最重要的阅读习惯是先选定版本，再打开文件。比如，不能用 0.99 的 <code>task_struct.tss.cr3</code> 反推 0.11 已经有每任务独立页目录，也不能把 0.98 的 TCP/IP 目录写成 0.98 默认构建出的内核能力。</p>
 </section>
 
@@ -38,7 +38,7 @@
     goto repeat;
 return __res;</code></pre></div>
 <p><code>swap_out()</code> 使用静态目录/页表扫描游标寻找候选项。<code>try_to_swap_out()</code> 对脏页检查引用计数是否为 1、申请 swap slot、把页表项改为 swap 编码、写出页面并释放物理页；对干净页则可直接清除映射并释放页面。这个实现不是教科书式的“第二次机会算法”：源码没有按访问位构造完整的 CLOCK/second-chance 环。</p>
-<figure class="figure" tabindex="0" aria-label="可横向滚动的换页路径图"><img src="../assets/svg/26-swap-path.svg" loading="lazy" alt="Linux 0.12 内存不足时 get_free_page 调用 swap_out，扫描页表；脏且独占的页写入 swap slot，干净页直接释放，缺页时 swap_in 读回" width="960" height="480"><figcaption>换出和换入分别由内存分配失败路径与缺页处理路径触发；不是一个独立守护进程在后台任意挑页。</figcaption></figure>
+<figure class="figure figure-wide" aria-label="可横向滚动的换页路径图"><div class="diagram-scroll" tabindex="0" role="region" aria-label="横向滚动查看图解"><span class="diagram-hint">左右滑动查看完整图解</span><img src="../assets/svg/26-swap-path.svg" loading="lazy" alt="Linux 0.12 内存不足时 get_free_page 调用 swap_out，扫描页表；脏且独占的页写入 swap slot，干净页直接释放，缺页时 swap_in 读回" width="960" height="480"></div><figcaption>换出和换入分别由内存分配失败路径与缺页处理路径触发；不是一个独立守护进程在后台任意挑页。</figcaption></figure>
 <div class="note"><p><strong>边界：</strong>0.12 的 <code>_pg_dir = 0</code> 仍体现共享的线性页目录布局；不要把后期 0.99.x 的每任务 CR3 结构倒灌到这个版本。</p></div>
 </section>
 
@@ -63,7 +63,7 @@ return __res;</code></pre></div>
 <p>32 位线性地址可以表示 <code>2^32</code> 个字节，即 4GiB；这是 x86 地址宽度给出的理论空间，不是“每个进程都能把 4GiB 当作用户内存使用”，更不是机器一定装有 4GiB RAM。</p>
 <p>真正值得比较的是页目录的所有权。0.12 的 <code>copy_page_tables(from,to,size)</code> 直接根据线性地址计算全局 <code>_pg_dir = 0</code> 中的目录项。到 0.99-pl11，<code>task_struct</code> 的 TSS 中有 <code>cr3</code>；<code>copy_page_tables()</code> 为新任务分配页目录并复制目录项，<code>free_page_tables()</code> 则按该任务的 <code>tss.cr3</code> 回收。</p>
 <p>0.99-pl11 的 <code>clear_page_tables()</code> 只清理目录项 0–767，并在页目录被共享时复制 768–1023 的高端项。按 1024 个 PDE、每项覆盖 4MiB 计算，目录总覆盖 4GiB；这个版本的代码布局把低端 3GiB 留给进程映射，把高端 1GiB 内核映射作为共享区域。这里的证据指向 <strong>0.99-pl11 这份晚期开发源码</strong>，不要把这个具体布局泛化成 Linux 所有版本、所有架构永远固定的规则。</p>
-<figure class="figure" tabindex="0" aria-label="可横向滚动的页目录图"><img src="../assets/svg/26-address-space.svg" loading="lazy" alt="0.12 通过全局 pg_dir 和线性地址区间管理任务；0.99-pl11 每个 task 的 TSS 保存 CR3，独立页目录的低 768 项对应 3GiB 用户区，高 256 项共享 1GiB 内核映射" width="960" height="480"><figcaption>每个任务拥有自己的页目录并不意味着内核映射也复制一份；0.99-pl11 对高端保留项采取共享策略。</figcaption></figure>
+<figure class="figure figure-wide" aria-label="可横向滚动的页目录图"><div class="diagram-scroll" tabindex="0" role="region" aria-label="横向滚动查看图解"><span class="diagram-hint">左右滑动查看完整图解</span><img src="../assets/svg/26-address-space.svg" loading="lazy" alt="0.12 通过全局 pg_dir 和线性地址区间管理任务；0.99-pl11 每个 task 的 TSS 保存 CR3，独立页目录的低 768 项对应 3GiB 用户区，高 256 项共享 1GiB 内核映射" width="960" height="480"></div><figcaption>每个任务拥有自己的页目录并不意味着内核映射也复制一份；0.99-pl11 对高端保留项采取共享策略。</figcaption></figure>
 </section>
 
 <section id="release" aria-labelledby="release-heading"><h2 id="release-heading">1.0：稳定发布，而不是突然换代</h2>
