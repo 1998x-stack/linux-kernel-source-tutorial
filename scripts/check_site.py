@@ -60,14 +60,14 @@ def main():
         h=Inspector()
         data=path.read_text(encoding='utf-8')
         h.feed(data)
-        if i <= 15:
+        if i <= 20:
             if h.h1!=1: bad(f'{path}: expected 1 H1, got {h.h1}')
             if len(h.sections)<5: bad(f'{path}: requires >= 5 self-contained sections')
             if not h.images: bad(f'{path}: visual explanation missing')
             if 'v0.11' not in data and 'Linux 0.11' not in data: bad(f'{path}: version scope missing')
             if 'Olah-style' in data or '本讲义介绍' in data: bad(f'{path}: workflow boilerplate found')
             if '<details' not in data: bad(f'{path}: missing native interactive self-check')
-        if i>15 and 'theme.css' not in data: bad(f'{path}: legacy stylesheet unexpectedly missing')
+        if i>20 and 'theme.css' not in data: bad(f'{path}: legacy stylesheet unexpectedly missing')
         check_refs(path,h)
         redirect=ROOT/f'{num}.html'
         if not redirect.exists() or f'chapters/{num}.html' not in redirect.read_text(encoding='utf-8'):
@@ -95,6 +95,11 @@ def main():
         '13': ('LOW_MEM', '0x100000', 'get_free_page'),
         '14': ('do_wp_page', 'do_no_page', 'CR2'),
         '15': ('BLOCK_SIZE', '1024', 'BADNESS'),
+        '16': ('SUPER_MAGIC', 'i_zone', 'read_super'),
+        '17': ('dir_namei', 'filp', 'open_namei'),
+        '18': ('PIPE_SIZE', 'SIGPIPE', 'ZMAGIC'),
+        '19': ('NR_REQUEST', 'IN_ORDER', 'nr_sectors'),
+        '20': ('CHS', 'IRQ14', 'ramdisk'),
     }
     for n, terms in required.items():
         article = (ROOT/'chapters'/f'{n}.html').read_text(encoding='utf-8')
@@ -107,7 +112,7 @@ def main():
     if ISSUES:
         for issue in ISSUES: print('FAIL',issue)
         return 1
-    print('PASS static validation: 28 chapters, 28 redirects, 15 redesigned articles, links and SVGs.')
+    print('PASS static validation: 28 chapters, 28 redirects, 20 redesigned articles, links and SVGs.')
     return 0
 if __name__=='__main__':
     sys.exit(main())

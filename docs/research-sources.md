@@ -1,4 +1,4 @@
-# 0.11 源码研究与证据账本（第一至三批 01–15）
+# 0.11 源码研究与证据账本（第一至四批 01–20）
 
 本表对应 **Linux 0.11**，不将 0.12、现代 Linux 或改造后的教学 fork 混进历史断言。原始代码使用古老汇编语法，摘录前必须核对版本和文件名。
 
@@ -23,11 +23,11 @@
 - 原 02 章“14 个源码目录”的断言没有严格标出层级，且旧稿可能混用现代 `vmlinux` 术语。
 - 原 05 章 `AX=0xE801` 与原始 0.11 源码不符；已以 `AH=0x88` 重写。
 - 原 04 章含复位向量物理地址不严谨的直接算术推导；新文与 BIOS 装载 0x7C00 的事件严格分开。
-- 16–28 目前为迁移保存，不属于这轮事实审计已通过范围。
+- 21–28 目前为迁移保存，不属于这轮事实审计已通过范围。
 
 ## 未来核验任务
 
-逐篇验证 16–28 中实际代码、API、数据结构和边界条件；尤其注意 `mem_init`、系统调用、8259、fork、MINIX 文件系统、TTY、驱动接口和现代内核对比。每次重写要先扩充此账本，再生成插图。
+逐篇验证 21–28 中实际代码、API、数据结构和边界条件；尤其注意 `mem_init`、系统调用、8259、fork、MINIX 文件系统、TTY、驱动接口和现代内核对比。每次重写要先扩充此账本，再生成插图。
 
 ## 第二批 06–10 的逐篇事实审计
 
@@ -66,4 +66,25 @@
 | 15 | [include/linux/fs.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/include/linux/fs.h) | BLOCK_SIZE=1024、NR_HASH=307，buffer_head 不存在旧文所写的 b_req 字段 |
 | 15 | [fs/buffer.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/fs/buffer.c) | hash/free_list 双链、BADNESS(dirt,lock) 选择候选，非严格 LRU；brelse 仅减 b_count，sys_sync/sync_dev 负责写回 |
 
-本轮新增 `assets/svg/11-*.svg` 至 `15-*.svg` 共 10 张原创 SVG。各图只展示对应版本支持的因果路径；图中示例计数/页地址为教学演算而非模拟器测量。更新后的 CI 会对前 15 章做 HTML/链接/SVG XML 与三宽度浏览器验收。仍需在后续对 16–28 逐章交叉复核。
+本轮新增 `assets/svg/11-*.svg` 至 `15-*.svg` 共 10 张原创 SVG。各图只展示对应版本支持的因果路径；图中示例计数/页地址为教学演算而非模拟器测量。更新后的 CI 会对前 20 章做 HTML/链接/SVG XML 与三宽度浏览器验收。仍需在后续对 21–28 逐章交叉复核。
+
+## 第四批 16–20：MINIX、路径、管道和块 I/O 的源码事实审计
+
+| 章节 | v0.11 真实源码 | 已修正的技术事实 |
+|---|---|---|
+| 16 | [include/linux/fs.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/include/linux/fs.h) | SUPER_MAGIC=0x137F、BLOCK_SIZE=1024、d_inode=32B、i_zone[9]、d_super_block 的 s_log_zone_size 指“区大小位移”而非日志 |
+| 16 | [fs/super.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/fs/super.c) | read_super 从块 1 读取超级块，随后缓存 inode 与 zone 两类 bitmap；mount_root 还要关联根 inode |
+| 16 | [fs/bitmap.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/fs/bitmap.c) | new_inode、free_inode、new_block、free_block 实际定义于 bitmap.c；位图位序与 s_firstdatazone−1 存在偏移 |
+| 16 | [fs/inode.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/fs/inode.c) | _bmap 采用 7 个直接、512 个一级、512² 个二级间接区号；read_inode 用 (num−1)/32 算磁盘块 |
+| 17 | [fs/namei.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/fs/namei.c) | get_dir/dir_namei/namei/open_namei 分工；find_entry 为挂载点与 .. 特殊处理；NAME_LEN=14 |
+| 17 | [include/linux/fs.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/include/linux/fs.h) | dir_entry 为 16B、NR_OPEN=20、NR_FILE=64；f_pos 位于 struct file，非 inode 全局位置 |
+| 17 | [fs/file_dev.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/fs/file_dev.c) | file_read 通过 bmap 和 bread 从 1KiB 缓冲块读取，非 fs/minix/file.c 或现代 VFS |
+| 18 | [fs/pipe.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/fs/pipe.c) | sys_pipe 在 fs/pipe.c，两个 file 引用一个匿名 m_inode；read_pipe/write_pipe 使用 4KiB 环形页，容量 4095B、无读者触发 SIGPIPE |
+| 18 | [fs/exec.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/fs/exec.c) | do_execve 使用 a.out ZMAGIC 与 #!；demand-loading 指令页在缺页时读 executable inode，而非一次将全部程序复制进内存 |
+| 19 | [kernel/blk_drv/blk.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/blk_drv/blk.h) | NR_REQUEST=32、IN_ORDER 比较 cmd/dev/sector；静态链表不是自动请求合并 |
+| 19 | [kernel/blk_drv/ll_rw_blk.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/blk_drv/ll_rw_blk.c) | WRITE 只可使用 request[0..20]；READ 可扫描 [0..31]；每个 1KiB buffer_block 对应 2×512B 扇区 |
+| 20 | [kernel/blk_drv/hd.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/blk_drv/hd.c) | 使用分区 start_sect 后计算 CHS，read_intr 每 IRQ 取 256 words，并更新 sector/buffer/nr_sectors |
+| 20 | [kernel/system_call.s](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/system_call.s) | hd_interrupt 是汇编 IRQ14 入口，使用 do_hd 指针分派 read_intr/write_intr，不是普通 C 版 do_IRQ |
+| 20 | [kernel/blk_drv/ramdisk.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/blk_drv/ramdisk.c) | rd_init 预留一段内存，do_rd_request 使用 memcpy 和 (sector<<9) 定位；没有运行时 malloc(2MiB) |
+
+本批新增十张 `assets/svg/16-*.svg` 至 `assets/svg/20-*.svg` 原创源码流程图；图中路径、字段和返回分支均可对照上述原版源码，标注的数值例子为教学演算而非运行实验。CI 目标：前 20 章静态结构和 1440/390/360px 浏览器基本交互验收；21–28 保留旧章节，不能据此声称完成源码审计。
