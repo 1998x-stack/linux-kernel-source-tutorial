@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="470" viewBox="0 0 960 470" role="img" aria-labelledby="svg-title svg-desc"><title id="svg-title">0.11 调试地址：系统被搬到 0，并 identity-map 前 16MiB</title><desc id="svg-desc">bootsect 把 system 装入 0x10000；setup 把它搬到物理 0 并跳入保护模式；head.s 建立前 16MiB 恒等映射。</desc><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#147f80"/></marker><marker id="warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#b75e3f"/></marker></defs><style>text{font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;fill:#263d40}.title{font-size:23px;font-weight:750}.sub{font-size:14px;fill:#647879}.node{font-size:16px;font-weight:720}.detail{font-size:13px;fill:#566c70}.tiny{font-size:11.5px;fill:#6a7d7f}.line{fill:none;stroke:#147f80;stroke-width:2.5;marker-end:url(#arr)}.warnline{fill:none;stroke:#b75e3f;stroke-width:2.5;marker-end:url(#warn)}.teal{fill:#eef8f5;stroke:#147f80;stroke-width:1.6}.sand{fill:#fff4ed;stroke:#b75e3f;stroke-width:1.6}.slate{fill:#f2f5f6;stroke:#789094;stroke-width:1.4}</style><rect width="960" height="470" rx="16" fill="#fffdfa"/><text x="30" y="43" class="title">0.11 调试地址：系统被搬到 0，并 identity-map 前 16MiB</text><text x="30" y="69" class="sub">bootsect 把 system 装入 0x10000；setup 把它搬到物理 0 并跳入保护模式；head.s 建立前 16MiB 恒等映射。</text>
+<rect x="35" y="110" width="198" height="83" rx="12" class="teal"/><text x="49" y="137" class="node">BIOS / bootsect</text><text x="49" y="159" class="detail">boot sector at 0x7C00</text>
+<path d="M233 151L267 151" class="line"/>
+<rect x="271" y="110" width="197" height="83" rx="12" class="teal"/><text x="285" y="137" class="node">加载 system</text><text x="285" y="159" class="detail">物理 0x10000</text>
+<path d="M468 151L502 151" class="line"/>
+<rect x="506" y="110" width="197" height="83" rx="12" class="teal"/><text x="520" y="137" class="node">setup.s 搬移</text><text x="520" y="159" class="detail">复制到物理 0</text>
+<path d="M703 151L737 151" class="line"/>
+<rect x="741" y="110" width="184" height="83" rx="12" class="teal"/><text x="755" y="137" class="node">head.s</text><text x="755" y="159" class="detail">startup_32 at 0</text>
+<rect x="36" y="273" width="264" height="83" rx="12" class="teal"/><text x="50" y="300" class="node">CR3 = 0</text><text x="50" y="322" class="detail">页目录位于物理 0</text>
+<rect x="348" y="273" width="264" height="83" rx="12" class="teal"/><text x="362" y="300" class="node">pg0…pg3</text><text x="362" y="322" class="detail">4 个页表覆盖 16MiB</text>
+<rect x="660" y="273" width="264" height="83" rx="12" class="teal"/><text x="674" y="300" class="node">恒等映射</text><text x="674" y="322" class="detail">linear 0x00100000 → physical 0x00100000</text>
+<path d="M833 193L166 268" class="line"/>
+<path d="M833 193L480 268" class="line"/>
+<path d="M612 314L656 314" class="line"/>
+<text x="37" y="407" class="detail">内核早期代码的链接地址与线性地址可按 0 起点理解；并不存在现代 x86-64 常见的 0xC0000000 高半区。</text>
+<text x="37" y="438" class="tiny">用户进程仍使用 LDT 段基址；GDB 的线性地址、物理地址、段内 offset 不能随意混为一谈。</text></svg>
