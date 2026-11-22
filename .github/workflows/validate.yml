@@ -36,3 +36,10 @@ jobs:
           echo $! > /tmp/tutorial-server.pid
       - name: Desktop and mobile smoke checks
         run: python scripts/browser_smoke.py http://127.0.0.1:8000
+      - name: Preserve browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-011-browser-qa
+          path: reports/browser-qa/
+          if-no-files-found: ignore

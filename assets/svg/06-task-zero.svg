@@ -2,7 +2,7 @@
 <rect x="307" y="98" width="346" height="74" rx="11" fill="#eef8f5" stroke="#147f80" stroke-width="1.7"/><text x="321" y="129" class="node">task 0 执行 main()</text><text x="321" y="154" class="detail">sti → move_to_user_mode → fork</text>
 <path d="M480 172V208H235V237 M480 208H727V237" stroke="#147f80" stroke-width="2.5" fill="none"/>
 <path d="M235 215V236" stroke="#147f80" stroke-width="2.5" marker-end="url(#teal")/><path d="M727 215V236" stroke="#147f80" stroke-width="2.5" marker-end="url(#teal")"/>
-<rect x="61" y="239" width="352" height="93" rx="11" fill="#eef8f5" stroke="#147f80" stroke-width="1.7"/><text x="75" y="270" class="node">父分支：fork() &amp;gt; 0</text><text x="75" y="295" class="detail">task 0 循环 pause()</text>
+<rect x="61" y="239" width="352" height="93" rx="11" fill="#eef8f5" stroke="#147f80" stroke-width="1.7"/><text x="75" y="270" class="node">父分支：fork() &gt; 0</text><text x="75" y="295" class="detail">task 0 循环 pause()</text>
 <rect x="545" y="239" width="353" height="93" rx="11" fill="#f3f0fb" stroke="#6c64b2" stroke-width="1.7"/><text x="559" y="270" class="node">子分支：fork() == 0</text><text x="559" y="295" class="detail">task 1 进入 init()</text>
 <rect x="545" y="345" width="353" height="62" rx="9" fill="#f3f0fb" stroke="#6c64b2"/>
 <text x="561" y="369" class="detail">setup(磁盘) → /etc/rc → shell</text><text x="561" y="392" class="mini">init() 会再 fork 出执行 rc / shell 的后代</text>
