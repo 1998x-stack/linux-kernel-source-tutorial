@@ -173,10 +173,10 @@
       "num": "16",
       "title": "MINIX文件系统(上)",
       "topics": [
-        "磁盘六区布局",
-        "超级块super_block",
-        "inode结构与寻址",
-        "位图分配/释放算法"
+        "superblock / 磁盘块布局",
+        "32B inode、7+1+1 区号",
+        "inode/zone 位图",
+        "read_super 与挂载"
       ],
       "file": "chapters/16.html"
     },
@@ -184,10 +184,10 @@
       "num": "17",
       "title": "MINIX文件系统(下)",
       "topics": [
-        "namei()路径解析",
-        "file_table与fd映射",
-        "文件读写完整链路",
-        "open/close引用计数"
+        "get_dir 与 namei",
+        "14B 目录项和挂载点",
+        "filp → file → inode",
+        "open/read/close 调用链"
       ],
       "file": "chapters/17.html"
     },
@@ -195,10 +195,10 @@
       "num": "18",
       "title": "管道与exec",
       "topics": [
-        "管道环形缓冲区实现",
-        "read_pipe/write_pipe",
-        "a.out可执行格式",
-        "shell管道链时序"
+        "4095B 管道环形页",
+        "读写等待与 SIGPIPE",
+        "fork/dup/close 管道链",
+        "a.out execve 按需加载"
       ],
       "file": "chapters/18.html"
     },
@@ -206,10 +206,10 @@
       "num": "19",
       "title": "块设备驱动(上)",
       "topics": [
-        "块设备抽象层设计",
-        "request请求队列",
-        "电梯调度算法",
-        "ll_rw_block读写入口"
+        "32 个 request 槽",
+        "读优先与写入限额",
+        "IN_ORDER 电梯插入",
+        "1KiB 块 → 两个扇区"
       ],
       "file": "chapters/19.html"
     },
@@ -217,10 +217,10 @@
       "num": "20",
       "title": "块设备驱动(下)",
       "topics": [
-        "IDE控制器寄存器编程",
-        "CHS寻址与LBA",
-        "硬盘中断处理流程",
-        "RAM虚拟盘rd.c"
+        "分区偏移与 CHS",
+        "IDE 寄存器和 DRQ",
+        "IRQ14 分派与扇区传输",
+        "ramdisk 内存复制"
       ],
       "file": "chapters/20.html"
     },

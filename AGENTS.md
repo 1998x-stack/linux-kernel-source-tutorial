@@ -23,7 +23,7 @@ Maintain a self-contained, Chinese-language Linux 0.11 source-reading course. Ev
 - `index.html`: GitHub Pages homepage (root source). `courses.json`: canonical chapter metadata.
 - `chapters/01.html`–`chapters/28.html`: canonical chapter pages. Root `01.html`–`28.html` are permanent redirect stubs for legacy URLs; never remove them without a link migration plan.
 - `assets/css/site.css`: single design system for the homepage and rewritten lessons. `assets/js/site.js`: only progressively enhanced UI.
-- `chapters/theme.css`: intentionally preserved for legacy 16–28 until individually redesigned.
+- `chapters/theme.css`: intentionally preserved for legacy 21–28 until individually redesigned.
 - `assets/svg/*.svg`: standalone, original, accurate diagrams; `docs/research-sources.md`: evidence ledger.
 - Preserve all 28 lessons and do not claim non-rewritten lessons passed a source audit.
 
