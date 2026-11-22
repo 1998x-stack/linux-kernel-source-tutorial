@@ -28,9 +28,10 @@
       "id": "27-slub-default",
       "claim": "SLUB became the default slab allocator in Linux 2.6.23; slab allocation manages objects on top of physical pages.",
       "kind": "release_history",
-      "source_url": "https://mirrors.hust.edu.cn/git/linux-stable.git/log/init/Kconfig?h=v2.6.23.11",
+      "source_url": "https://github.com/torvalds/linux/blob/v2.6.23/init/Kconfig",
       "locator": "Make SLUB the default allocator commit",
-      "status": "verified"
+      "status": "verified",
+      "notes": "Compare upstream v2.6.22 init/Kconfig default SLAB with v2.6.23 default SLUB."
     },
     {
       "id": "27-scheduler",

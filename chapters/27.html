@@ -32,7 +32,7 @@
 <section id="memory" aria-labelledby="memory-heading"><h2 id="memory-heading">物理页分配与小对象分配是两层</h2>
 <p>在 0.11 中，<code>mem_map[]</code> 是按物理页索引的使用计数数组：空闲页标记为 0，分配页的计数递增；<code>get_free_page()</code> 扫描它并返回一个 4KiB 页面。它不是位图，也没有按 2 的幂次管理连续页块。</p>
 <p>现代内核的物理页分配通常由 buddy page allocator 管理。一个 order-\(n\) 块包含 \(2^n\) 个连续物理页；如果请求的块更小，分配器可以拆分更大的空闲块，释放时则尝试与同阶 buddy 合并。实际系统还要考虑 NUMA node、zone 和 per-CPU pageset 等快速路径，不能只用“一个全局空闲链表”来概括。</p>
-<p>小对象又是另一层问题。内核大量分配 <code>task_struct</code>、inode、dentry 等对象，反复直接申请整页会浪费空间和时间。SLAB/SLUB 一类对象缓存分配器在页分配器之上按对象尺寸管理缓存；SLUB 自 Linux 2.6.23 起成为默认 slab allocator，但 SLAB 在一段时间内仍可作为配置选项。它们不是 buddy 的替代品：buddy 管物理页块，SLUB 管页内对象。</p>
+<p>小对象又是另一层问题。内核大量分配 <code>task_struct</code>、inode、dentry 等对象，反复直接申请整页会浪费空间和时间。SLAB/SLUB 一类对象缓存分配器在页分配器之上按对象尺寸管理缓存；这个切换可以直接从上游 Kconfig 验证：v2.6.22 的 <code>init/Kconfig</code> 默认选择 <code>SLAB</code>，v2.6.23 改为默认 <code>SLUB</code>。SLUB 并非取代 buddy，而是改变页内对象缓存的组织方式；现代内核配置中仍能看到 SLAB 选项，但当前源码已将其标记为 deprecated。它们不是 buddy 的替代品：buddy 管物理页块，SLUB 管页内对象。</p>
 <figure class="figure" tabindex="0" aria-label="可横向滚动的内存分配层次图"><img src="../assets/svg/27-memory-layers.svg" loading="lazy" alt="Linux 0.11 mem_map 与 get_free_page 的逐页扫描，对照现代 zone、per-CPU pageset、buddy order 块和建立在页之上的 SLUB 对象缓存" width="960" height="480"><figcaption>现代内存分配不是“SLUB 替代 buddy”：页分配与对象分配位于不同层次，SLUB 通常从底层页分配器取得 slab 页面。</figcaption></figure>
 <table class="compare"><thead><tr><th>层次</th><th>回答的问题</th><th>典型机制</th></tr></thead><tbody>
 <tr><td>物理页</td><td>从哪个 node/zone 取得连续页？</td><td>Buddy allocator、order、PCP</td></tr>
@@ -94,7 +94,7 @@ make -C /lib/modules/$(uname -r)/build M=$PWD</code></pre></div>
 <li><a href="https://docs.kernel.org/mm/physical_memory.html" target="_blank" rel="noopener noreferrer">Linux Physical Memory</a>：node、zone 与现代物理页管理；<a href="https://docs.kernel.org/admin-guide/mm/slab.html" target="_blank" rel="noopener noreferrer">SLUB 用户指南</a>：对象缓存与调试。</li>
 <li><a href="https://docs.kernel.org/scheduler/sched-design-CFS.html" target="_blank" rel="noopener noreferrer">CFS Scheduler</a>；<a href="https://docs.kernel.org/scheduler/sched-eevdf.html" target="_blank" rel="noopener noreferrer">EEVDF Scheduler</a>：公平调度的历史模型与当前演进。</li>
 <li><a href="https://docs.kernel.org/kbuild/modules.html" target="_blank" rel="noopener noreferrer">Building External Modules</a>：现代 Kbuild 外部模块流程；<a href="https://docs.kernel.org/kernel-hacking/hacking.html" target="_blank" rel="noopener noreferrer">Kernel Hacking Guide</a>：模块入口和内核执行上下文。</li>
-<li><a href="https://docs.kernel.org/bpf/verifier.html" target="_blank" rel="noopener noreferrer">eBPF verifier</a>；<a href="https://docs.ebpf.io/linux/concepts/loops/" target="_blank" rel="noopener noreferrer">eBPF bounded loops</a>；<a href="https://docs.kernel.org/networking/af_xdp.html" target="_blank" rel="noopener noreferrer">AF_XDP</a>：验证约束、循环和 XDP 用户态数据路径。</li>
+<li><a href="https://docs.kernel.org/bpf/verifier.html" target="_blank" rel="noopener noreferrer">eBPF verifier</a>；上游 <a href="https://github.com/torvalds/linux/commit/2589726d12a1" target="_blank" rel="noopener noreferrer">bounded loops commit 2589726d12a1</a>；<a href="https://docs.ebpf.io/linux/concepts/loops/" target="_blank" rel="noopener noreferrer">bounded loops 说明</a>；<a href="https://docs.kernel.org/networking/af_xdp.html" target="_blank" rel="noopener noreferrer">AF_XDP</a>：验证约束、循环和 XDP 用户态数据路径。</li>
 </ol>
 <p>最后一个原则：现代文档会持续更新。阅读时要记录文档版本/内核版本，不要把某个当前实现细节反投射到 Linux 0.11。</p>
 </section>

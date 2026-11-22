@@ -118,6 +118,9 @@ len = count &lt;&lt; 9;</code></pre></div>
 <section id="procfs" aria-labelledby="procfs-heading"><h2 id="procfs-heading">为什么 procfs 不是 0.11 的小项目</h2>
 <p>原章节把“在 0.11 上实现 procfs”描述成只需添加 <code>file_system_type</code>、<code>read_super</code> 和几个虚拟 inode。这个设计把后续版本接口移植回了 0.11。v0.11 的 <code>include/linux/fs.h</code> 有 <code>file_operations</code> 和 <code>inode_operations</code>，但没有后来那套 <code>file_system_type</code> 注册结构与 <code>super_operations</code> 分派体系。</p>
 <p>到 v0.96c，<code>fs/super.c</code> 已经有文件系统注册表；v0.98-pl1 README 则把 proc-fs 列为源码树中的测试功能，并明确不建议用于真实使用。因此 procfs 可以作为“后续版本 VFS 扩展”的高级研究题，但不应伪装成在 0.11 上几行代码即可完成的备选小实验。</p>
+<details class="question"><summary>自测：为什么 rd_init 必须在 mem_init 之前执行？</summary><p>rd_init 返回 RAM Disk 占用的长度，init/main.c 把 main_memory_start 向后移动后才调用 mem_init。这样页分配器不会把 RAM Disk 所占物理区间标记为空闲页。</p></details>
+<details class="question"><summary>自测：为什么一个 1KiB block 对应两个 request sectors？</summary><p>0.11 的 BLOCK_SIZE 是 1024 字节，而块设备 request 的 sector 单位是 512 字节。ll_rw_block 将一个 buffer block 映射为 sector = block_number × 2、nr_sectors = 2。</p></details>
+<details class="question"><summary>自测：rd_load 与 rd_init 分别负责什么？</summary><p>rd_init 预留并清零内存、注册请求处理函数；rd_load 在硬盘 setup 路径中可从软盘装入 MINIX 根文件系统镜像，并在成功后将 ROOT_DEV 改为 major 1、minor 1。</p></details>
 </section>
 
 <section id="sources" aria-labelledby="sources-heading"><h2 id="sources-heading">原始源码与验收边界</h2>
