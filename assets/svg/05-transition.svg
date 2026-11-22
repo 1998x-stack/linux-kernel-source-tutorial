@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="450" viewBox="0 0 960 450" role="img" aria-labelledby="title desc"><title id="title">Linux 0.11 实模式到分页的指令顺序</title><desc id="desc">setup.s 在 16 位实模式中收集 BIOS 参数、搬移 system、加载 GDT、开启 A20、重编程 PIC、设置 PE，head.s 设置页目录与 PG</desc><rect width="960" height="450" rx="18" fill="#fffdfa"/><style>text{font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;fill:#203035}.small{font-size:15px;fill:#53676d}.tiny{font-size:13px;fill:#53676d}.hd{font-size:21px;font-weight:750}.mono{font:700 16px ui-monospace,Consolas,monospace}.line{stroke:#7b9492;stroke-width:2;fill:none}.solid{stroke:#147f80;stroke-width:3;fill:none}.dash{stroke:#b17e43;stroke-width:2;stroke-dasharray:8 6;fill:none}</style><defs><marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L8 3L0 6Z" fill="#147f80"/></marker><marker id="arr2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L8 3L0 6Z" fill="#b17e43"/></marker></defs>
+<text x="34" y="45" class="hd">先有保护模式，再有分页；两者不是同一开关</text>
+<text x="34" y="76" class="small">16-bit setup.s</text><line x1="198" y1="72" x2="917" y2="72" stroke="#c46848" stroke-width="3"/>
+<rect x="34" y="100" width="198" height="91" rx="12" fill="#fff2ed" stroke="#c46848" stroke-width="2"/><text x="52" y="132" font-size="17" font-weight="700">BIOS 参数</text><text x="52" y="157" class="small">INT 15h AH=88h</text>
+<path d="M232 145 L261 145" class="solid" marker-end="url(#arr)"/>
+<rect x="262" y="100" width="198" height="91" rx="12" fill="#fff2ed" stroke="#c46848" stroke-width="2"/><text x="280" y="132" font-size="17" font-weight="700">内核搬移</text><text x="280" y="157" class="small">0x10000 → 0x00000</text>
+<path d="M460 145 L489 145" class="solid" marker-end="url(#arr)"/>
+<rect x="490" y="100" width="198" height="91" rx="12" fill="#fff2ed" stroke="#c46848" stroke-width="2"/><text x="508" y="132" font-size="17" font-weight="700">硬件准备</text><text x="508" y="157" class="small">GDT · A20 · PIC</text>
+<path d="M688 145 L717 145" class="solid" marker-end="url(#arr)"/>
+<rect x="718" y="100" width="208" height="91" rx="12" fill="#fff2ed" stroke="#c46848" stroke-width="2"/><text x="736" y="132" font-size="17" font-weight="700">PE + 远跳转</text><text x="736" y="157" class="small">lmsw; jmpi 0,8</text>
+<path d="M822 191V244H150V274" class="solid" marker-end="url(#arr)"/>
+<text x="34" y="258" class="small">32-bit head.s</text>
+<rect x="34" y="277" width="276" height="95" rx="12" fill="#f0f6f4" stroke="#147f80" stroke-width="2"/><text x="52" y="309" font-size="17" font-weight="700">startup_32</text><text x="52" y="334" class="small">重设段寄存器 / IDT</text>
+<path d="M310 325 L342 325" class="solid" marker-end="url(#arr)"/>
+<rect x="343" y="277" width="276" height="95" rx="12" fill="#f0f6f4" stroke="#147f80" stroke-width="2"/><text x="361" y="309" font-size="17" font-weight="700">setup_paging</text><text x="361" y="334" class="small">4 个页表映射 0–16MiB</text>
+<path d="M619 325 L651 325" class="solid" marker-end="url(#arr)"/>
+<rect x="652" y="277" width="275" height="95" rx="12" fill="#f0f6f4" stroke="#147f80" stroke-width="2"/><text x="670" y="309" font-size="17" font-weight="700">main()</text><text x="670" y="334" class="small">内核子系统初始化</text>
+<text x="34" y="423" class="small">head.s 写 CR3 并置 CR0.PG；本图仅适用于 0.11 的 32 位启动路径。</text></svg>
