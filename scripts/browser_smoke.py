@@ -35,10 +35,18 @@ def main():
                 page.locator('details').first.locator('summary').click()
                 assert page.locator('details').first.evaluate('(el)=>el.open')
                 assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth'),f'{path} overflow at {width}'
+                for img in page.locator('figure img').all():
+                    img.scroll_into_view_if_needed()
+                    img.evaluate("(el)=>{el.loading='eager';}")
+                    handle=img.element_handle()
+                    page.wait_for_function(
+                        "(el)=>el.complete && el.naturalWidth>0",
+                        arg=handle,
+                        timeout=10000
+                    )
+                    assert img.evaluate('(el)=>el.naturalWidth>0'),f'{path} image broken: {img.get_attribute("src")}'
                 if n in (6,8,10,11,13,15,16,18,20,21,22,23,24,25):
                     page.screenshot(path=str(reports/f'chapter-{n:02d}-{width}.png'),full_page=True)
-                for img in page.locator('figure img').all():
-                    assert img.evaluate('(el)=>el.complete && el.naturalWidth>0'),f'{path} image broken'
             page.close()
         browser.close()
     assert not errors,f'JavaScript errors: {errors}'
