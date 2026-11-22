@@ -294,10 +294,10 @@
       "num": "27",
       "title": "现代内核对比",
       "topics": [
-        "Buddy/Slab/SLUB演进",
-        "CFS→EEVDF调度器",
-        "LKM内核模块",
-        "eBPF/XDP可编程"
+        "显式区分历史与现代",
+        "Buddy/SLUB 对照 mem_map",
+        "CFS/EEVDF 对照 counter",
+        "LKM/eBPF（仅对照）"
       ],
       "file": "chapters/27.html"
     },
