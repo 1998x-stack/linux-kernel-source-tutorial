@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="410" viewBox="0 0 960 410" role="img" aria-labelledby="title desc"><title id="title">Linux 0.11 实验的三个独立阶段</title><desc id="desc">源码阅读、构建古老的工具链以及有根文件系统的真实启动，不能混为一谈</desc><rect width="960" height="410" rx="18" fill="#fffdfa"/><style>text{font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;fill:#203035}.small{font-size:15px;fill:#53676d}.tiny{font-size:13px;fill:#53676d}.hd{font-size:21px;font-weight:750}.mono{font:700 16px ui-monospace,Consolas,monospace}.line{stroke:#7b9492;stroke-width:2;fill:none}.solid{stroke:#147f80;stroke-width:3;fill:none}.dash{stroke:#b17e43;stroke-width:2;stroke-dasharray:8 6;fill:none}</style><defs><marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L8 3L0 6Z" fill="#147f80"/></marker><marker id="arr2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L8 3L0 6Z" fill="#b17e43"/></marker></defs>
+<text x="32" y="44" class="hd">源码能读 ≠ 能在现代工具链直接构建 ≠ 能完整引导</text>
+<rect x="52" y="85" width="255" height="101" rx="12" fill="#f0f6f4" stroke="#147f80" stroke-width="2"/><text x="70" y="117" font-size="17" font-weight="700">阶段 A：核对源码</text><text x="70" y="142" class="small">官方 tarball / v0.11 标签</text>
+<rect x="353" y="85" width="255" height="101" rx="12" fill="#fff1eb" stroke="#c46848" stroke-width="2"/><text x="371" y="117" font-size="17" font-weight="700">阶段 B：历史构建</text><text x="371" y="142" class="small">as86 · ld86 · 老版 gcc</text>
+<rect x="654" y="85" width="255" height="101" rx="12" fill="#f5f2fd" stroke="#6c64b2" stroke-width="2"/><text x="672" y="117" font-size="17" font-weight="700">阶段 C：模拟运行</text><text x="672" y="142" class="small">Bochs / QEMU + 匹配镜像</text>
+<path d="M307 135 L353 135" class="dash" marker-end="url(#arr2)"/><path d="M608 135 L654 135" class="dash" marker-end="url(#arr2)"/>
+<rect x="70" y="253" width="822" height="119" rx="12" fill="#f4f8f7" stroke="#d3e3df"/>
+<text x="90" y="285" font-size="17" font-weight="700">验收层级（逐级增加前提）</text>
+<text x="90" y="322" class="small">A：文件与符号存在　 B：Image 构建成功　 C：串口/屏幕出现启动日志　 D：挂载根文件系统</text>
+<text x="90" y="350" class="tiny">仅有 Image 并不能保证进入 shell；根设备号和文件系统必须匹配。</text>
+</svg>

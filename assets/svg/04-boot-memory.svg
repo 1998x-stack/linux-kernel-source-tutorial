@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="420" viewBox="0 0 960 420" role="img" aria-labelledby="title desc"><title id="title">Linux 0.11 bootsect 装载地址</title><desc id="desc">BIOS 扇区起于 0x7c00, bootsect 复制到 0x90000，setup 载入 0x90200，system 载入 0x10000</desc><rect width="960" height="420" rx="18" fill="#fffdfa"/><style>text{font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;fill:#203035}.small{font-size:15px;fill:#53676d}.tiny{font-size:13px;fill:#53676d}.hd{font-size:21px;font-weight:750}.mono{font:700 16px ui-monospace,Consolas,monospace}.line{stroke:#7b9492;stroke-width:2;fill:none}.solid{stroke:#147f80;stroke-width:3;fill:none}.dash{stroke:#b17e43;stroke-width:2;stroke-dasharray:8 6;fill:none}</style><defs><marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L8 3L0 6Z" fill="#147f80"/></marker><marker id="arr2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L8 3L0 6Z" fill="#b17e43"/></marker></defs>
+<text x="33" y="44" class="hd">装载时的物理内存：地址决定程序为什么能接力</text>
+<text x="35" y="86" class="small">仅标出关键区间，不按内存容量比例绘图</text>
+<rect x="33" y="119" width="240" height="86" rx="12" fill="#f0f6f4" stroke="#147f80" stroke-width="2"/><text x="51" y="151" font-size="17" font-weight="700">BIOS → 0x7C00</text><text x="51" y="176" class="small">首个 512B 启动扇区</text>
+<rect x="354" y="119" width="240" height="86" rx="12" fill="#f0f6f4" stroke="#147f80" stroke-width="2"/><text x="372" y="151" font-size="17" font-weight="700">0x90000</text><text x="372" y="176" class="small">bootsect 自我复制</text>
+<rect x="682" y="119" width="240" height="86" rx="12" fill="#f0f6f4" stroke="#147f80" stroke-width="2"/><text x="700" y="151" font-size="17" font-weight="700">0x90200</text><text x="700" y="176" class="small">setup 占后续扇区</text>
+<path d="M273 164 L354 164" class="solid" marker-end="url(#arr)"/><path d="M594 164 L682 164" class="solid" marker-end="url(#arr)"/>
+<rect x="48" y="258" width="874" height="72" rx="12" fill="#eef6f4" stroke="#147f80" stroke-width="2"/>
+<text x="68" y="286" class="mono">0x10000</text><text x="205" y="286" font-size="17" font-weight="700">system（含 head.s 与内核代码）</text>
+<text x="68" y="314" class="small">bootsect 的 read_it 使用 BIOS INT 0x13 分批加载，避免跨 64KiB 边界</text>
+<path d="M478 205V235H533V257" class="dash" marker-end="url(#arr2)"/>
+<text x="35" y="388" class="small">下一阶段 setup.s 将 system 从 0x10000 向下搬到 0x00000，随后切换模式。</text>
+</svg>
