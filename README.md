@@ -20,7 +20,7 @@
 ├── chapters/
 │   ├── 01.html ... 28.html      # 全部已重构文章
 │   ├── index.html               # 兼容旧章节对首页的相对路径
-│   └── theme.css                # 原章节样式（已修复错误注释）
+│   └── theme.css                # 旧版兼容样式；01–28 章均不再引用
 ├── assets/
 │   ├── css/site.css             # 首页 + 新文章共同的设计系统
 │   ├── js/site.js               # 可选交互：检索/筛选
