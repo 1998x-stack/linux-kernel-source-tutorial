@@ -5,7 +5,7 @@
   unsigned short s_firstdatazone, s_log_zone_size;
   unsigned long s_max_size;
   unsigned short s_magic;
-};</code></pre></div><p><code>s_magic=0x137F</code> 是这个历史格式的标识。<code>s_log_zone_size</code> 表示 zone 大小相对于 1KiB 块的移位量，**不是“日志（journaling）块大小”**；旧文把 log 理解为日志会凭空引入 0.11 并不具有的日志文件系统机制。</p><details class="question"><summary>两个 imap 块理论上提供多少位？（展开核对）</summary><p>2×1024×8=16384 位。但 inode 编号、保留位和超级块声明的 s_ninodes 共同限制有效编号，不能把 16384 直接说成该卷有 16384 个有效 inode。</p></details></section>
+};</code></pre></div><p><code>s_magic=0x137F</code> 是这个历史格式的标识。<code>s_log_zone_size</code> 表示 zone 大小相对于 1KiB 块的移位量，<strong>不是“日志（journaling）块大小”</strong>；旧文把 log 理解为日志会凭空引入 0.11 并不具有的日志文件系统机制。</p><details class="question"><summary>两个 imap 块理论上提供多少位？（展开核对）</summary><p>2×1024×8=16384 位。但 inode 编号、保留位和超级块声明的 s_ninodes 共同限制有效编号，不能把 16384 直接说成该卷有 16384 个有效 inode。</p></details></section>
 <section id="read-super" aria-labelledby="read-super-heading"><h2 id="read-super-heading">read_super 的磁盘读取与内存缓存</h2><p><a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/fs/super.c" target="_blank" rel="noopener noreferrer">fs/super.c</a> 定义在内存里的 <code>super_block[NR_SUPER]</code>，<code>NR_SUPER=8</code>。<code>read_super(dev)</code> 先查已有缓存和设备变化，再申请空闲槽；<code>bread(dev,1)</code> 从块 1 获取磁盘超级块，并把 <code>d_super_block</code> 的公共字段复制到内存 <code>super_block</code> 前部，检查 <code>SUPER_MAGIC</code>，继续把 inode/zone 位图块缓存进 <code>s_imap[]</code>/<code>s_zmap[]</code>。</p><div class="code-frame"><div class="code-caption">fs/super.c — 调用链所需的真实操作（短节选）</div><pre><code>if (!(bh = bread(dev,1))) { ... }
 *((struct d_super_block *) s) =
     *((struct d_super_block *) bh-&gt;b_data);
