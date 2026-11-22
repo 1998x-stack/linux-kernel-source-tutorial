@@ -8,9 +8,9 @@ static struct proc_dir_entry *entry;
 
 static int lab_show(struct seq_file *m, void *v)
 {
-    seq_printf(m, "name: kernel-field-guide\\n");
-    seq_printf(m, "pid: %d\\n", current->pid);
-    seq_printf(m, "comm: %s\\n", current->comm);
+    seq_printf(m, "name: kernel-field-guide\n");
+    seq_printf(m, "pid: %d\n", current->pid);
+    seq_printf(m, "comm: %s\n", current->comm);
     return 0;
 }
 
@@ -31,14 +31,14 @@ static int __init lab_init(void)
     entry = proc_create("kernel_lab", 0444, NULL, &lab_ops);
     if (!entry)
         return -ENOMEM;
-    pr_info("kernel_lab: /proc/kernel_lab created\\n");
+    pr_info("kernel_lab: /proc/kernel_lab created\n");
     return 0;
 }
 
 static void __exit lab_exit(void)
 {
     proc_remove(entry);
-    pr_info("kernel_lab: removed\\n");
+    pr_info("kernel_lab: removed\n");
 }
 
 module_init(lab_init);

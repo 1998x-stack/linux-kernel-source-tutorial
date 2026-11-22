@@ -15,25 +15,25 @@ int main(void)
 
     fd = open("/dev/ram1", O_RDWR, 0);
     if (fd < 0) {
-        printf("open /dev/ram1 failed\\n");
+        printf("open /dev/ram1 failed\n");
         return 1;
     }
     if (lseek(fd, 0L, 0) < 0 ||
         write(fd, written, TEST_BYTES) != TEST_BYTES ||
         lseek(fd, 0L, 0) < 0 ||
         read(fd, readback, TEST_BYTES) != TEST_BYTES) {
-        printf("ramdisk I/O failed\\n");
+        printf("ramdisk I/O failed\n");
         close(fd);
         return 2;
     }
     for (i = 0; i < TEST_BYTES; i++) {
         if (written[i] != readback[i]) {
-            printf("mismatch at %d\\n", i);
+            printf("mismatch at %d\n", i);
             close(fd);
             return 3;
         }
     }
     close(fd);
-    printf("ramdisk read/write PASS\\n");
+    printf("ramdisk read/write PASS\n");
     return 0;
 }
