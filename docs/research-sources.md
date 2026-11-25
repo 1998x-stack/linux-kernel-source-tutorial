@@ -1,4 +1,4 @@
-# 0.11 源码研究与证据账本（第一至四批 01–20）
+# 0.11 源码研究与证据账本（第 01–28 章）
 
 本表对应 **Linux 0.11**，不将 0.12、现代 Linux 或改造后的教学 fork 混进历史断言。原始代码使用古老汇编语法，摘录前必须核对版本和文件名。
 
@@ -23,11 +23,11 @@
 - 原 02 章“14 个源码目录”的断言没有严格标出层级，且旧稿可能混用现代 `vmlinux` 术语。
 - 原 05 章 `AX=0xE801` 与原始 0.11 源码不符；已以 `AH=0x88` 重写。
 - 原 04 章含复位向量物理地址不严谨的直接算术推导；新文与 BIOS 装载 0x7C00 的事件严格分开。
-- 21–28 目前为迁移保存，不属于这轮事实审计已通过范围。
+- 21–28 已在第五批（见下文“第五批 21–26”及 27/28 表）重写为源码锚定稿，命题逐一对应 v0.11 文件。
 
-## 未来核验任务
+## 尚需继续的核验
 
-逐篇验证 21–28 中实际代码、API、数据结构和边界条件；尤其注意 `mem_init`、系统调用、8259、fork、MINIX 文件系统、TTY、驱动接口和现代内核对比。每次重写要先扩充此账本，再生成插图。
+21–28 已完成本轮重写与源码锚定，但事实复审仍须逐章针对具体寄存器、字段与返回分支继续交叉核对（`mem_init`、系统调用、8259、fork、MINIX 文件系统、TTY、驱动接口与现代内核对比）。每次实质改动都应先扩充本账本，再生成插图。
 
 ## 第二批 06–10 的逐篇事实审计
 
@@ -66,7 +66,7 @@
 | 15 | [include/linux/fs.h](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/include/linux/fs.h) | BLOCK_SIZE=1024、NR_HASH=307，buffer_head 不存在旧文所写的 b_req 字段 |
 | 15 | [fs/buffer.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/fs/buffer.c) | hash/free_list 双链、BADNESS(dirt,lock) 选择候选，非严格 LRU；brelse 仅减 b_count，sys_sync/sync_dev 负责写回 |
 
-本轮新增 `assets/svg/11-*.svg` 至 `15-*.svg` 共 10 张原创 SVG。各图只展示对应版本支持的因果路径；图中示例计数/页地址为教学演算而非模拟器测量。更新后的 CI 会对前 20 章做 HTML/链接/SVG XML 与三宽度浏览器验收。仍需在后续对 21–28 逐章交叉复核。
+本轮新增 `assets/svg/11-*.svg` 至 `15-*.svg` 共 10 张原创 SVG。各图只展示对应版本支持的因果路径；图中示例计数/页地址为教学演算而非模拟器测量。该批 CI 覆盖当时已重构章节的 HTML/链接/SVG XML 与三宽度浏览器验收；21–28 已在后续第五批完成重写与源码锚定。
 
 ## 第四批 16–20：MINIX、路径、管道和块 I/O 的源码事实审计
 
@@ -87,7 +87,7 @@
 | 20 | [kernel/system_call.s](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/system_call.s) | hd_interrupt 是汇编 IRQ14 入口，使用 do_hd 指针分派 read_intr/write_intr，不是普通 C 版 do_IRQ |
 | 20 | [kernel/blk_drv/ramdisk.c](https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/kernel/blk_drv/ramdisk.c) | rd_init 预留一段内存，do_rd_request 使用 memcpy 和 (sector<<9) 定位；没有运行时 malloc(2MiB) |
 
-本批新增十张 `assets/svg/16-*.svg` 至 `assets/svg/20-*.svg` 原创源码流程图；图中路径、字段和返回分支均可对照上述原版源码，标注的数值例子为教学演算而非运行实验。CI 目标：前 20 章静态结构和 1440/390/360px 浏览器基本交互验收；21–28 保留旧章节，不能据此声称完成源码审计。
+本批新增十张 `assets/svg/16-*.svg` 至 `assets/svg/20-*.svg` 原创源码流程图；图中路径、字段和返回分支均可对照上述原版源码，标注的数值例子为教学演算而非运行实验。该批 CI 目标覆盖当时已重构章节的静态结构和 1440/390/360px 浏览器基本交互验收；21–28 随后在第五批重写，故本批不声称已完成其源码审计。
 
 ## 第五批 21–26：tty、驱动、调试、构建与演进边界
 
