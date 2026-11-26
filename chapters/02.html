@@ -4,7 +4,7 @@
 grep -n 'system_call:' kernel/system_call.s
 grep -n 'sys_read' fs/read_write.c
 grep -n 'sys_call_table' include/linux/sys.h
-grep -n 'll_rw_block' fs/buffer.c kernel/blk_drv/ll_rw_blk.c</code></pre></div><p>这是一条检索路线，而不是承诺这些函数必然组成某次 I/O 的唯一调用栈。对于 <code>read()</code>，真正的实验应跟踪不同文件类型，观察分支在哪里分流。更深的完整路径将在后续系统调用、文件系统和驱动章节逐一展开。</p></section>
+grep -n 'll_rw_block' fs/buffer.c kernel/blk_drv/ll_rw_blk.c</code></pre></div><p>预期观察：前三条分别定位到 <code>kernel/system_call.s</code> 的 <code>system_call</code> 标签、<code>fs/read_write.c</code> 中的 <code>sys_read</code> 定义和 <code>include/linux/sys.h</code> 里的 <code>sys_call_table</code>；第四条同时命中 <code>fs/buffer.c</code> 与 <code>kernel/blk_drv/ll_rw_blk.c</code>，说明块请求跨越缓存与块层两个文件。若某条无输出，应先确认当前目录就是 v0.11 源码根目录。</p><p>这是一条检索路线，而不是承诺这些函数必然组成某次 I/O 的唯一调用栈。对于 <code>read()</code>，真正的实验应跟踪不同文件类型，观察分支在哪里分流。更深的完整路径将在后续系统调用、文件系统和驱动章节逐一展开。</p><aside class="note"><p>限界：这些 <code>grep</code> 只证明符号存在及其所在文件，不证明它们在某个具体 <code>read()</code> 调用中一定按此顺序执行，也不代表在模拟器里观察到了真实运行路径。</p></aside></section>
 <section id="build" aria-labelledby="build-heading"><h2 id="build-heading">构建产物不能套用现代术语</h2><p>原始 <a href="https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/refs/tags/v0.11/Makefile" target="_blank" rel="noopener noreferrer">Makefile</a> 的核心目标是 <code>Image</code>。它先把 <code>boot/bootsect</code>、<code>boot/setup</code> 和 <code>tools/system</code> 制备出来，再让 <code>tools/build</code> 拼接成可启动镜像。<code>tools/system</code> 是链接产物，但不能把它径直说成现代内核构建流程的 <code>vmlinux</code>。</p><div class="code-frame"><div class="code-caption">Linux 0.11 Makefile 的目标与组装命令（节选）</div><pre><code>all: Image
 
 Image: boot/bootsect boot/setup tools/system tools/build
