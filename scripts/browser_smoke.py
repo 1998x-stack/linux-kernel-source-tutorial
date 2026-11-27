@@ -43,7 +43,17 @@ def main():
                 page.evaluate('window.scrollTo(0,document.body.scrollHeight)')
                 page.wait_for_timeout(500)
                 for img in page.locator('figure img').all():
-                    assert img.evaluate('(el)=>el.complete && el.naturalWidth>0'),f'{path} image broken'
+                    img.scroll_into_view_if_needed()
+                    img.evaluate("(el)=>{el.loading='eager';}")
+                    handle=img.element_handle()
+                    page.wait_for_function(
+                        "(el)=>el.complete && el.naturalWidth>0",
+                        arg=handle,
+                        timeout=10000
+                    )
+                    assert img.evaluate('(el)=>el.naturalWidth>0'),f'{path} image broken: {img.get_attribute("src")}'
+                if n in (6,8,10,11,13,15,16,18,20,21,22,23,24,25):
+                    page.screenshot(path=str(reports/f'chapter-{n:02d}-{width}.png'),full_page=True)
             page.close()
         browser.close()
     assert not errors,f'JavaScript errors: {errors}'

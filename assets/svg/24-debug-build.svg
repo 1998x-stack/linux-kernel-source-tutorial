@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="470" viewBox="0 0 960 470" role="img" aria-labelledby="svg-title svg-desc"><title id="svg-title">Linux 0.11 的启动镜像与调试符号是两件产物</title><desc id="svg-desc">tools/build 把 bootsect、setup、system 拼成 Image；GDB 应加载与镜像同布局的未剥离 tools/system 符号文件。</desc><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#147f80"/></marker><marker id="warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#b75e3f"/></marker></defs><style>text{font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;fill:#263d40}.title{font-size:23px;font-weight:750}.sub{font-size:14px;fill:#647879}.node{font-size:16px;font-weight:720}.detail{font-size:13px;fill:#566c70}.tiny{font-size:11.5px;fill:#6a7d7f}.line{fill:none;stroke:#147f80;stroke-width:2.5;marker-end:url(#arr)}.warnline{fill:none;stroke:#b75e3f;stroke-width:2.5;marker-end:url(#warn)}.teal{fill:#eef8f5;stroke:#147f80;stroke-width:1.6}.sand{fill:#fff4ed;stroke:#b75e3f;stroke-width:1.6}.slate{fill:#f2f5f6;stroke:#789094;stroke-width:1.4}</style><rect width="960" height="470" rx="16" fill="#fffdfa"/><text x="30" y="43" class="title">Linux 0.11 的启动镜像与调试符号是两件产物</text><text x="30" y="69" class="sub">tools/build 把 bootsect、setup、system 拼成 Image；GDB 应加载与镜像同布局的未剥离 tools/system 符号文件。</text>
+<rect x="34" y="111" width="177" height="83" rx="12" class="teal"/><text x="48" y="138" class="node">bootsect</text><text x="48" y="160" class="detail">512B · BIOS 7C00</text>
+<path d="M211 151L247 151" class="line"/>
+<rect x="251" y="111" width="177" height="83" rx="12" class="teal"/><text x="265" y="138" class="node">setup</text><text x="265" y="160" class="detail">最多 4 个扇区</text>
+<path d="M428 151L464 151" class="line"/>
+<rect x="468" y="111" width="177" height="83" rx="12" class="teal"/><text x="482" y="138" class="node">tools/system</text><text x="482" y="160" class="detail">内核 80386 代码</text>
+<path d="M645 151L681 151" class="line"/>
+<rect x="685" y="111" width="240" height="83" rx="12" class="teal"/><text x="699" y="138" class="node">tools/build</text><text x="699" y="160" class="detail">去头 / 补齐 / 串接</text>
+<rect x="34" y="273" width="258" height="83" rx="12" class="teal"/><text x="48" y="300" class="node">Image</text><text x="48" y="322" class="detail">原始启动磁盘镜像</text>
+<rect x="350" y="273" width="258" height="83" rx="12" class="teal"/><text x="364" y="300" class="node">tools/system.debug</text><text x="364" y="322" class="detail">保留符号与调试信息</text>
+<rect x="666" y="273" width="258" height="83" rx="12" class="teal"/><text x="680" y="300" class="node">System.map</text><text x="680" y="322" class="detail">链接映射表，不含 DWARF</text>
+<path d="M558 194L163 268" class="line"/>
+<path d="M558 194L479 268" class="line"/>
+<path d="M645 151L795 268" class="line"/>
+<text x="37" y="408" class="detail">默认 LDFLAGS=-s -x 会剥离符号；仅添加 CFLAGS -g 不足以让最终 tools/system 保留符号。</text>
+<text x="37" y="438" class="tiny">调试构建需让各 CFLAGS 加 -g，并为最终链接去掉 -s/-x；Image 仍使用正确的启动二进制。</text></svg>

@@ -228,10 +228,10 @@
       "num": "21",
       "title": "字符设备驱动(上)",
       "topics": [
-        "tty三队列模型",
-        "tty_struct数据结构",
-        "控制台VGA显存操作",
-        "行规程line discipline"
+        "TTY 三队列与 1024B 环形缓冲",
+        "copy_to_cooked 规范输入",
+        "tty_read / tty_write",
+        "VGA 显存与 CRTC"
       ],
       "file": "chapters/21.html"
     },
@@ -239,10 +239,10 @@
       "num": "22",
       "title": "字符设备驱动(下)",
       "topics": [
-        "键盘扫描码→ASCII",
-        "8042控制器编程",
-        "16550 UART寄存器",
-        "串口中断处理"
+        "8042 IRQ1 扫描码状态机",
+        "E0/E1 与 key_table",
+        "8250/16450 UART（2400 baud）",
+        "IIR/IER 与 IRQ3/IRQ4"
       ],
       "file": "chapters/22.html"
     },
@@ -261,10 +261,10 @@
       "num": "24",
       "title": "GDB单步跟踪",
       "topics": [
-        "QEMU+GDB远程调试",
-        "战略断点设置",
-        "跟踪系统调用全程",
-        "内存检查技巧"
+        "原始 Image 与 tools/build",
+        "LDFLAGS -s/-x 符号剥离",
+        "QEMU -s/-S GDB Stub",
+        "0x10000 搬移与 16MiB 恒等映射"
       ],
       "file": "chapters/24.html"
     },
@@ -272,10 +272,10 @@
       "num": "25",
       "title": "动手写系统调用",
       "topics": [
-        "编写sys_hello函数",
-        "注册系统调用号",
-        "重新编译内核",
-        "用户态测试验证"
+        "EAX/EBX/ECX/EDX 系统调用 ABI",
+        "__NR_hello = 72",
+        "sys_call_table 与 nr_system_calls = 73",
+        "ZMAGIC a.out 验证"
       ],
       "file": "chapters/25.html"
     },

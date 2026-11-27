@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="480" viewBox="0 0 960 480" role="img" aria-labelledby="svg-title svg-desc"><title id="svg-title">键盘 IRQ1：扫描码状态机，不是一个 if/else 字符表</title><desc id="svg-desc">0x60 读取扫描码；E0/E1 前缀影响后续解释；key_table 更新修饰键或把字符序列送入控制台 read_q。</desc><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#147f80"/></marker><marker id="warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#b75e3f"/></marker></defs><style>text{font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;fill:#263d40}.title{font-size:23px;font-weight:750}.sub{font-size:14px;fill:#647879}.node{font-size:16px;font-weight:720}.detail{font-size:13px;fill:#566c70}.tiny{font-size:11.5px;fill:#6a7d7f}.line{fill:none;stroke:#147f80;stroke-width:2.5;marker-end:url(#arr)}.warnline{fill:none;stroke:#b75e3f;stroke-width:2.5;marker-end:url(#warn)}.teal{fill:#eef8f5;stroke:#147f80;stroke-width:1.6}.sand{fill:#fff4ed;stroke:#b75e3f;stroke-width:1.6}.slate{fill:#f2f5f6;stroke:#789094;stroke-width:1.4}</style><rect width="960" height="480" rx="16" fill="#fffdfa"/><text x="30" y="43" class="title">键盘 IRQ1：扫描码状态机，不是一个 if/else 字符表</text><text x="30" y="69" class="sub">0x60 读取扫描码；E0/E1 前缀影响后续解释；key_table 更新修饰键或把字符序列送入控制台 read_q。</text>
+<rect x="34" y="117" width="171" height="80" rx="12" class="teal"/><text x="48" y="144" class="node">8042 数据端口</text><text x="48" y="166" class="detail">inb 0x60 → scan code</text>
+<path d="M205 157L239 157" class="line"/>
+<rect x="243" y="117" width="171" height="80" rx="12" class="teal"/><text x="257" y="144" class="node">前缀识别</text><text x="257" y="166" class="detail">E0 / E1 状态 e0</text>
+<path d="M414 157L448 157" class="line"/>
+<rect x="452" y="117" width="171" height="80" rx="12" class="teal"/><text x="466" y="144" class="node">key_table[]</text><text x="466" y="166" class="detail">按扫描码跳转</text>
+<path d="M623 157L657 157" class="line"/>
+<rect x="661" y="117" width="266" height="80" rx="12" class="teal"/><text x="675" y="144" class="node">mode / leds / key maps</text><text x="675" y="166" class="detail">Shift、Ctrl、Alt、Caps、Num</text>
+<rect x="39" y="280" width="240" height="85" rx="12" class="teal"/><text x="53" y="307" class="node">修饰键 / 特殊键</text><text x="53" y="329" class="detail">更新 mode、LED 或控制动作</text>
+<rect x="361" y="280" width="240" height="85" rx="12" class="teal"/><text x="375" y="307" class="node">字符 / 转义序列</text><text x="375" y="329" class="detail">put_queue()，最多 8 字节</text>
+<rect x="683" y="280" width="240" height="85" rx="12" class="teal"/><text x="697" y="307" class="node">tty_table[0].read_q</text><text x="697" y="329" class="detail">1024B 环形队列</text>
+<path d="M532 197L160 276" class="line"/>
+<path d="M532 197L481 276" class="line"/>
+<path d="M601 322L679 322" class="line"/>
+<text x="38" y="411" class="detail">中断收尾：脉冲端口 0x61 的 bit 7 → 向主 PIC 写 EOI 0x20 → do_tty_interrupt(0)。</text>
+<text x="38" y="440" class="tiny">释放键不是统一的“最高位=1 就丢弃”：key_table 项负责修饰键按下/释放状态。</text></svg>

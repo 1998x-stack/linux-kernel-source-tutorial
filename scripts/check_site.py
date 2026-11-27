@@ -101,6 +101,11 @@ def main():
         '18': ('PIPE_SIZE', 'SIGPIPE', 'ZMAGIC'),
         '19': ('NR_REQUEST', 'IN_ORDER', 'nr_sectors'),
         '20': ('CHS', 'IRQ14', 'ramdisk'),
+        '21': ('TTY_BUF_SIZE', 'copy_to_cooked', 'secondary'),
+        '22': ('0x24', '0x23', '2400'),
+        '23': ('tty_write(0', 'Magic SysRq', 'do_no_page'),
+        '24': ('tools/system.debug', '0x10000', '-s -S'),
+        '25': ('__NR_hello', 'sys_call_table', 'ZMAGIC'),
     }
     for n, terms in required.items():
         article = (ROOT/'chapters'/f'{n}.html').read_text(encoding='utf-8')

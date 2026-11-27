@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="480" viewBox="0 0 960 480" role="img" aria-labelledby="svg-title svg-desc"><title id="svg-title">Linux 0.11 TTY：三队列把硬件字节变成进程输入</title><desc id="svg-desc">read_q 接收原始字节；copy_to_cooked 执行输入映射、规范行编辑和信号；secondary 交给 tty_read。输出方向独立经过 write_q。</desc><defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#147f80"/></marker><marker id="warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#b75e3f"/></marker></defs><style>text{font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;fill:#263d40}.title{font-size:23px;font-weight:750}.sub{font-size:14px;fill:#647879}.node{font-size:16px;font-weight:720}.detail{font-size:13px;fill:#566c70}.tiny{font-size:11.5px;fill:#6a7d7f}.line{fill:none;stroke:#147f80;stroke-width:2.5;marker-end:url(#arr)}.warnline{fill:none;stroke:#b75e3f;stroke-width:2.5;marker-end:url(#warn)}.teal{fill:#eef8f5;stroke:#147f80;stroke-width:1.6}.sand{fill:#fff4ed;stroke:#b75e3f;stroke-width:1.6}.slate{fill:#f2f5f6;stroke:#789094;stroke-width:1.4}</style><rect width="960" height="480" rx="16" fill="#fffdfa"/><text x="30" y="43" class="title">Linux 0.11 TTY：三队列把硬件字节变成进程输入</text><text x="30" y="69" class="sub">read_q 接收原始字节；copy_to_cooked 执行输入映射、规范行编辑和信号；secondary 交给 tty_read。输出方向独立经过 write_q。</text>
+<text x="38" y="108" class="node">INPUT / 输入路径</text>
+<rect x="35" y="126" width="178" height="77" rx="12" class="teal"/><text x="49" y="153" class="node">键盘 / UART IRQ</text><text x="49" y="175" class="detail">IRQ1 / IRQ3 / IRQ4</text>
+<path d="M213 164L244 164" class="line"/>
+<rect x="248" y="126" width="173" height="77" rx="12" class="teal"/><text x="262" y="153" class="node">read_q · 1024 B</text><text x="262" y="175" class="detail">raw byte ring</text>
+<path d="M421 164L452 164" class="line"/>
+<rect x="456" y="126" width="194" height="77" rx="12" class="teal"/><text x="470" y="153" class="node">copy_to_cooked()</text><text x="470" y="175" class="detail">tty_io.c</text>
+<path d="M650 164L681 164" class="line"/>
+<rect x="685" y="126" width="132" height="77" rx="12" class="teal"/><text x="699" y="153" class="node">secondary</text><text x="699" y="175" class="detail">cooked / canonical</text>
+<path d="M817 164L824 164" class="line"/>
+<rect x="827" y="126" width="103" height="77" rx="12" class="sand"/><text x="841" y="153" class="node">tty_read()</text><text x="841" y="175" class="detail">user</text>
+<text x="38" y="261" class="node">OUTPUT / 输出路径</text>
+<rect x="35" y="279" width="170" height="77" rx="12" class="teal"/><text x="49" y="306" class="node">用户 write()</text><text x="49" y="328" class="detail">tty_write()</text>
+<path d="M205 317L239 317" class="line"/>
+<rect x="243" y="279" width="175" height="77" rx="12" class="teal"/><text x="257" y="306" class="node">write_q · 1024 B</text><text x="257" y="328" class="detail">output ring</text>
+<path d="M418 317L453 317" class="line"/>
+<rect x="457" y="279" width="190" height="77" rx="12" class="teal"/><text x="471" y="306" class="node">tty-&gt;write(tty)</text><text x="471" y="328" class="detail">驱动回调</text>
+<path d="M647 317L683 317" class="line"/>
+<rect x="687" y="279" width="116" height="77" rx="12" class="sand"/><text x="701" y="306" class="node">con_write()</text><text x="701" y="328" class="detail">VGA</text>
+<rect x="817" y="279" width="113" height="77" rx="12" class="sand"/><text x="831" y="306" class="node">rs_write()</text><text x="831" y="328" class="detail">UART</text>
+<path d="M780 279V235H742V207" fill="none" stroke="#147f80" stroke-width="2" stroke-dasharray="5 5" marker-end="url(#arr)"/>
+<text x="35" y="407" class="detail">每个 tty_queue 都有 head / tail / proc_list / buf[1024]；secondary.data 记录规范输入行/EOF 计数。</text>
+<text x="35" y="434" class="tiny">Linux 0.11 只有 tty_table[0] 控制台、[1] COM1、[2] COM2；源码明确写明 pseudo-tty 尚未实现。</text></svg>
